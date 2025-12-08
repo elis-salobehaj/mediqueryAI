@@ -36,6 +36,7 @@ This will:
 ## 📋 Table of Contents
 
 - [Features](#features)
+- [Visual Insights](#-visual-insights)
 - [Tech Stack](#tech-stack)
 - [Quick Start (Docker)](#-quick-start-docker---recommended)
 - [Manual Installation](#manual-installation)
@@ -63,6 +64,13 @@ This will:
 - 🔄 **Smart Visualization Selection**: AI-powered chart type recommendation based on data structure
 - 🎯 **Hybrid LLM Support**: Local models (Ollama) or Cloud (Google Gemini)
 - 🐳 **Docker Ready**: One-command deployment with Docker Compose
+
+## ✨ Visual Insights
+
+| Choropleth Map | Pie Chart | Bar Chart |
+|:---:|:---:|:---:|
+| ![Choropleth Map](docs/images/choropleth_map.png) | ![Pie Chart](docs/images/pie_chart.png) | ![Bar Chart](docs/images/bar_chart.png) |
+*Patient count by state, Gender distribution, Average age by state*
 
 ## Tech Stack
 
