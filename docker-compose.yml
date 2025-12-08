@@ -1,0 +1,83 @@
+services:
+  # Ollama service (local LLM) - Only starts when using local model
+  ollama:
+    profiles:
+      - local-model  # Only start with --profile local-model or when USE_LOCAL_MODEL=true
+    build:
+      context: .
+      dockerfile: ollama.Dockerfile
+    container_name: antigravity-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_ORIGINS=*
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    # Uncomment for GPU support (NVIDIA)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # Backend service (FastAPI)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: antigravity-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./backend/data:/app/data
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - CHAT_HISTORY_RETENTION_HOURS=${CHAT_HISTORY_RETENTION_HOURS:-24}
+      - USE_LOCAL_MODEL=${USE_LOCAL_MODEL:-false}
+      - LOCAL_MODEL_NAME=${LOCAL_MODEL_NAME:-qwen2.5:3b}
+      - OLLAMA_HOST=http://ollama:11434
+    # No hard dependency on Ollama - backend will work with or without it
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Frontend service (React + Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: antigravity-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
+    driver: local
+
+networks:
+  default:
+    name: antigravity-network

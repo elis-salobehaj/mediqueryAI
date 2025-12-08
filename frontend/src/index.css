@@ -1,0 +1,266 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Futuristic HUD Palette */
+  --hud-bg-dark: #020408;
+  --hud-bg-panel: rgba(5, 10, 20, 0.65);
+
+  --hud-cyan: #00F0FF;
+  --hud-cyan-dim: rgba(0, 240, 255, 0.2);
+  --hud-cyan-glow: rgba(0, 240, 255, 0.6);
+  --hud-accent: #FF0055;
+  /* Error/Alert */
+
+  --hud-border: 1px solid rgba(0, 240, 255, 0.3);
+  --hud-text: #E0F7FA;
+
+  --font-display: 'Orbitron', sans-serif;
+  --font-body: 'Rajdhani', sans-serif;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background-color: var(--hud-bg-dark);
+  color: var(--hud-text);
+  overflow: hidden;
+  /* Cyber Grid Background */
+  background-image:
+    linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--hud-cyan);
+  box-shadow: 0 0 10px var(--hud-cyan);
+}
+
+/* Typography & Utils */
+.hud-title {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px var(--hud-cyan-glow);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono {
+  font-family: 'Courier New', monospace;
+}
+
+/* Fallback or specific mono */
+
+/* Scanline Overlay */
+.scanline {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom,
+      transparent 50%,
+      rgba(0, 240, 255, 0.02) 50%);
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 50;
+}
+
+/* --- HUD INPUT MODULE (Redesigned) --- */
+
+.hud-input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  /* Glass panel effect */
+  background: linear-gradient(90deg,
+      rgba(0, 240, 255, 0.05) 0%,
+      rgba(0, 240, 255, 0.1) 50%,
+      rgba(0, 240, 255, 0.05) 100%);
+  border: 1px solid var(--hud-cyan-dim);
+  border-left: 2px solid var(--hud-cyan);
+  border-right: 2px solid var(--hud-cyan);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.1);
+  clip-path: polygon(20px 0, 100% 0,
+      100% calc(100% - 20px), calc(100% - 20px) 100%,
+      0 100%, 0 20px);
+  padding: 2px;
+  transition: all 0.3s ease;
+}
+
+.hud-input-group:focus-within {
+  box-shadow: 0 0 30px var(--hud-cyan-dim);
+  border-color: var(--hud-cyan);
+}
+
+.hud-input-field {
+  background: transparent;
+  border: none;
+  color: var(--hud-cyan);
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  letter-spacing: 1px;
+  width: 100%;
+  padding: 16px 24px;
+  text-transform: uppercase;
+}
+
+.hud-input-field:focus {
+  outline: none;
+}
+
+.hud-input-field::placeholder {
+  color: rgba(0, 240, 255, 0.3);
+}
+
+/* --- CUSTOM SELECTOR --- */
+.hud-select-wrapper {
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+}
+
+.hud-select-trigger {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--hud-cyan-dim);
+  color: var(--hud-cyan);
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  font-family: var(--font-display);
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  clip-path: polygon(0 0, 100% 0, 100% 80%, 90% 100%, 0 100%);
+}
+
+.hud-select-trigger:hover {
+  background: rgba(0, 240, 255, 0.1);
+  border-color: var(--hud-cyan);
+}
+
+.hud-select-options {
+  position: absolute;
+  bottom: 120%;
+  /* Opens UP */
+  left: 0;
+  width: 200px;
+  background: rgba(2, 4, 8, 0.95);
+  border: 1px solid var(--hud-cyan);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+  z-index: 100;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  /* Rect logic */
+}
+
+.hud-option {
+  padding: 10px 16px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+  font-family: var(--font-display);
+  transition: all 0.2s;
+  border-bottom: 1px solid rgba(0, 240, 255, 0.1);
+}
+
+.hud-option:hover,
+.hud-option.selected {
+  background: rgba(0, 240, 255, 0.2);
+  color: #fff;
+  padding-left: 20px;
+  /* Slight shift */
+}
+
+/* --- SEND BUTTON --- */
+.hud-btn-send {
+  background: var(--hud-cyan);
+  color: #000;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 0 32px;
+  height: 100%;
+  border: none;
+  clip-path: polygon(20px 0, 100% 0, 100% 100%, 0 100%);
+  /* Angled left */
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.hud-btn-send:hover {
+  background: #fff;
+  box-shadow: 0 0 20px var(--hud-cyan);
+}
+
+.hud-btn-send:disabled {
+  background: #333;
+  color: #555;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* --- BACKGROUND LOGO --- */
+.bg-logo-fixed {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40vw;
+  height: 40vh;
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 0;
+  background-image: url('/logo.png');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  filter: drop-shadow(0 0 20px var(--hud-cyan));
+}
+
+/* --- Animations --- */
+@keyframes pulse-border {
+  0% {
+    border-color: rgba(0, 240, 255, 0.3);
+  }
+
+  50% {
+    border-color: rgba(0, 240, 255, 0.8);
+  }
+
+  100% {
+    border-color: rgba(0, 240, 255, 0.3);
+  }
+}
+
+.animate-border-pulse {
+  animation: pulse-border 2s infinite;
+}
+
+/* Recharts Customization Override */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: var(--hud-cyan-dim) !important;
+}
+
+.recharts-text {
+  fill: var(--hud-text) !important;
+  font-family: var(--font-body);
+}
+
+.hexagon-clip {
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
