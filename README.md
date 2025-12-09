@@ -4,7 +4,7 @@ An intelligent healthcare data analysis system that combines natural language pr
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.9+-blue.svg)
-![Node](https://img.shields.io/badge/node-18+-green.svg)
+![Node](https://img.shields.io/badge/node-23+-green.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
 
 ## 🚀 Quick Start (Docker - Recommended)
@@ -99,7 +99,7 @@ This will:
 ### Prerequisites
 
 - **Python 3.9+**
-- **Node.js 18+** and npm
+- **Node.js 23+** and npm
 - **Google Gemini API Key** ([Get one here](https://makersuite.google.com/app/apikey)) - Optional if using local model
 
 ### Ubuntu/Linux
@@ -323,7 +323,7 @@ medicareAI/
 │   │   └── App.tsx              # Root component
 │   └── Dockerfile               # Frontend container
 │
-├── docker-compose.yml           # Orchestration
+├── docker-compose.yml           # Container orchestration (use 'docker compose')
 ├── docker-start.ps1             # Windows quick start
 ├── docker-start.sh              # Linux/Mac quick start
 ├── DOCKER_DEPLOYMENT.md         # Deployment guide
@@ -361,12 +361,12 @@ docker exec -it antigravity-ollama ollama pull qwen2.5:3b
 
 **Backend can't connect to Ollama:**
 ```bash
-docker-compose restart ollama
-docker-compose restart backend
+docker compose restart ollama
+docker compose restart backend
 ```
 
 **Port already in use:**
-Edit `docker-compose.yml` and change ports:
+Edit `docker-compose.yml` and change ports (then run `docker compose up -d`):
 ```yaml
 ports:
   - "3001:80"  # Frontend
