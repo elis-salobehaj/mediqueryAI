@@ -17,7 +17,7 @@ try {
 
 # Check if Docker Compose is available
 try {
-    docker-compose --version | Out-Null
+    docker compose version | Out-Null
     Write-Host "✓ Docker Compose is available" -ForegroundColor Green
 } catch {
     Write-Host "❌ Docker Compose is not available" -ForegroundColor Red
@@ -53,7 +53,7 @@ Write-Host ""
 
 if ($useLocal -eq "true") {
     Write-Host "🤖 Local model mode detected - starting with Ollama..." -ForegroundColor Cyan
-    docker-compose --profile local-model up -d
+    docker compose --profile local-model up -d
     
     Write-Host ""
     Write-Host "Waiting for services to start..." -ForegroundColor Yellow
@@ -66,7 +66,7 @@ if ($useLocal -eq "true") {
     docker exec -it antigravity-ollama ollama pull qwen2.5:3b
 } else {
     Write-Host "☁️  Cloud mode detected - starting without Ollama..." -ForegroundColor Cyan
-    docker-compose up -d
+    docker compose up -d
 }
 
 Write-Host ""
@@ -83,9 +83,9 @@ if ($useLocal -eq "true") {
 }
 Write-Host ""
 Write-Host "Useful commands:" -ForegroundColor Yellow
-Write-Host "  docker-compose logs -f          # View logs" -ForegroundColor White
-Write-Host "  docker-compose ps               # Check status" -ForegroundColor White
-Write-Host "  docker-compose down             # Stop all services" -ForegroundColor White
-Write-Host "  docker-compose restart backend  # Restart backend" -ForegroundColor White
+Write-Host "  docker compose logs -f          # View logs" -ForegroundColor White
+Write-Host "  docker compose ps               # Check status" -ForegroundColor White
+Write-Host "  docker compose down             # Stop all services" -ForegroundColor White
+Write-Host "  docker compose restart backend  # Restart backend" -ForegroundColor White
 Write-Host ""
 Write-Host "Happy querying! 🎉" -ForegroundColor Green

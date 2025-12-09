@@ -25,13 +25,13 @@ cp .env.docker .env
 
 ```bash
 # Build and start all containers
-docker-compose up -d
+docker compose up -d
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # Check status
-docker-compose ps
+docker compose ps
 ```
 
 ### 4. Pull Ollama Model (First Time Only)
@@ -52,6 +52,30 @@ docker exec -it antigravity-ollama ollama list
 - **Ollama**: http://localhost:11434
 
 ---
+
+
+---
+
+## 🌐 Remote Access (SSH Port Forwarding)
+
+Running Docker containers on a remote server? Access them locally using SSH port forwarding:
+
+```bash
+# Linux/Mac/Windows
+ssh -L 3000:localhost:3000 -L 8000:localhost:8000 -L 11434:localhost:11434 username@server_ip
+```
+
+This forwards:
+- **Port 3000**: Frontend (React/Nginx)
+- **Port 8000**: Backend API (FastAPI)
+- **Port 11434**: Ollama (optional, for model management)
+
+After connecting, access on your local machine:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000/docs
+- Ollama: http://localhost:11434
+
+**Keep the SSH session open** while using the application.
 
 ## Services Overview
 
@@ -81,17 +105,17 @@ docker exec -it antigravity-ollama ollama list
 
 ```bash
 # Start all services
-docker-compose up -d
+docker compose up -d
 
 # Stop all services
-docker-compose down
+docker compose down
 
 # Restart a specific service
-docker-compose restart backend
+docker compose restart backend
 
 # View logs
-docker-compose logs -f backend
-docker-compose logs -f ollama
+docker compose logs -f backend
+docker compose logs -f ollama
 ```
 
 ### Manage Ollama Models
@@ -117,11 +141,11 @@ docker exec -it antigravity-ollama ollama run qwen2.5:3b "SELECT * FROM patients
 # Edit files in ./backend and changes auto-reload
 
 # Frontend rebuild
-docker-compose build frontend
-docker-compose up -d frontend
+docker compose build frontend
+docker compose up -d frontend
 
 # View backend logs
-docker-compose logs -f backend
+docker compose logs -f backend
 ```
 
 ### Database & Data
@@ -164,7 +188,7 @@ LOCAL_MODEL_NAME=qwen2.5:3b
 USE_LOCAL_MODEL=true
 
 # Restart backend
-docker-compose restart backend
+docker compose restart backend
 ```
 
 **Use Google Gemini (Cloud):**
@@ -174,7 +198,7 @@ USE_LOCAL_MODEL=false
 GEMINI_API_KEY=your_actual_key
 
 # Restart backend
-docker-compose restart backend
+docker compose restart backend
 ```
 
 ---
@@ -210,8 +234,8 @@ ollama:
 ### 3. Restart Services
 
 ```bash
-docker-compose down
-docker-compose up -d
+docker compose down
+docker compose up -d
 ```
 
 ---
@@ -232,25 +256,25 @@ docker exec -it antigravity-ollama ollama list
 
 ```bash
 # Check if Ollama is running
-docker-compose ps ollama
+docker compose ps ollama
 
 # Check Ollama health
 docker exec -it antigravity-ollama curl http://localhost:11434/api/tags
 
 # Restart services in order
-docker-compose restart ollama
-docker-compose restart backend
+docker compose restart ollama
+docker compose restart backend
 ```
 
 ### Frontend Not Loading
 
 ```bash
 # Rebuild frontend
-docker-compose build frontend
-docker-compose up -d frontend
+docker compose build frontend
+docker compose up -d frontend
 
 # Check logs
-docker-compose logs frontend
+docker compose logs frontend
 ```
 
 ### Port Already in Use
@@ -272,7 +296,7 @@ docker exec -it antigravity-ollama ollama pull gemma2:2b
 LOCAL_MODEL_NAME=gemma2:2b
 
 # Restart backend
-docker-compose restart backend
+docker compose restart backend
 ```
 
 ---
@@ -283,7 +307,7 @@ docker-compose restart backend
 
 ```bash
 # Build without cache
-docker-compose build --no-cache
+docker compose build --no-cache
 
 # Use production .env
 cp .env.production .env
@@ -347,7 +371,7 @@ docker run --rm -v ollama_data:/data -v $(pwd)/backup:/backup alpine tar xzf /ba
 docker cp ./backup/chat_history.db antigravity-backend:/app/
 
 # Restart services
-docker-compose restart
+docker compose restart
 ```
 
 ---
@@ -368,7 +392,7 @@ docker stats antigravity-ollama
 
 ```bash
 # Check all services
-docker-compose ps
+docker compose ps
 
 # Test endpoints
 curl http://localhost:8000/health
@@ -382,13 +406,13 @@ curl http://localhost:3000
 
 ```bash
 # Stop and remove containers
-docker-compose down
+docker compose down
 
 # Remove volumes (WARNING: deletes data)
-docker-compose down -v
+docker compose down -v
 
 # Remove images
-docker-compose down --rmi all
+docker compose down --rmi all
 
 # Full cleanup
 docker system prune -a --volumes
@@ -409,10 +433,10 @@ docker system prune -a --volumes
 
 ## Next Steps
 
-1. ✅ Start services: `docker-compose up -d`
+1. ✅ Start services: `docker compose up -d`
 2. ✅ Pull model: `docker exec -it antigravity-ollama ollama pull qwen2.5:3b`
 3. ✅ Access app: http://localhost:3000
 4. ✅ Test queries and visualizations
-5. ✅ Monitor logs: `docker-compose logs -f`
+5. ✅ Monitor logs: `docker compose logs -f`
 
 **Your AI Healthcare Data Agent is now running in Docker!** 🚀

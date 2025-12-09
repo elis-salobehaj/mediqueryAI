@@ -15,7 +15,7 @@ fi
 echo "✓ Docker is installed"
 
 # Check if Docker Compose is available
-if ! command -v docker-compose &> /dev/null; then
+if ! docker compose version &> /dev/null; then
     echo "❌ Docker Compose is not available"
     exit 1
 fi
@@ -44,7 +44,7 @@ echo ""
 
 if [ "$USE_LOCAL" = "true" ]; then
     echo "🤖 Local model mode detected - starting with Ollama..."
-    docker-compose --profile local-model up -d
+    docker compose --profile local-model up -d
     
     echo ""
     echo "Waiting for services to start..."
@@ -57,7 +57,7 @@ if [ "$USE_LOCAL" = "true" ]; then
     docker exec -it antigravity-ollama ollama pull qwen2.5:3b
 else
     echo "☁️  Cloud mode detected - starting without Ollama..."
-    docker-compose up -d
+    docker compose up -d
 fi
 
 echo ""
@@ -74,9 +74,9 @@ if [ "$USE_LOCAL" = "true" ]; then
 fi
 echo ""
 echo "Useful commands:"
-echo "  docker-compose logs -f          # View logs"
-echo "  docker-compose ps               # Check status"
-echo "  docker-compose down             # Stop all services"
-echo "  docker-compose restart backend  # Restart backend"
+echo "  docker compose logs -f          # View logs"
+echo "  docker compose ps               # Check status"
+echo "  docker compose down             # Stop all services"
+echo "  docker compose restart backend  # Restart backend"
 echo ""
 echo "Happy querying! 🎉"

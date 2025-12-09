@@ -12,10 +12,13 @@ Thumbs.db
 
 # Python / Backend
 backend/venv/
-backend/__pycache__/
-backend/*.pyc
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
 backend/.env
 backend/chat_history.db
+*.db
 
 # Node / Frontend
 frontend/node_modules/
