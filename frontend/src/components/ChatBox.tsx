@@ -14,10 +14,9 @@ interface ChatBoxProps {
 }
 
 const MODELS = [
-  { id: 'gemini-flash-latest', name: 'GEMINI FLASH (LATEST)' },
-  { id: 'gemini-2.0-flash-exp', name: 'GEMINI 2.0 FLASH (EXP)' },
-  { id: 'gemini-1.5-pro', name: 'GEMINI 1.5 PRO' },
-  { id: 'gemma-3-27b-it', name: 'GEMMA 3 27B (OPEN SOURCE)' },
+  { id: 'gemma-3-27b-it', name: 'GEMMA 3 27B (DEFAULT / HIGH QUOTA)' },
+  { id: 'gemini-2.5-flash-lite', name: 'GEMINI 2.5 FLASH LITE' },
+  { id: 'claude-3-5-sonnet-20241022', name: 'CLAUDE 3.5 SONNET (ANTHROPIC)' },
 ];
 
 /* Custom Futuristic Dropdown Component */
@@ -67,7 +66,7 @@ const CustomSelect = ({ value, onChange, options }: any) => {
 const ChatBox: React.FC<ChatBoxProps> = ({ messages, setMessages }) => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState(MODELS[3].id); // Default to Gemma for reliability
+  const [selectedModel, setSelectedModel] = useState(MODELS[0].id); // Default to Gemma 3
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

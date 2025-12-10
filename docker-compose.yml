@@ -42,10 +42,11 @@ services:
       - ./backend/data:/app/data
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - CHAT_HISTORY_RETENTION_HOURS=${CHAT_HISTORY_RETENTION_HOURS:-24}
-      - USE_LOCAL_MODEL=${USE_LOCAL_MODEL:-false}
-      - LOCAL_MODEL_NAME=${LOCAL_MODEL_NAME:-qwen2.5:3b}
-      - OLLAMA_HOST=http://ollama:11434
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - CHAT_HISTORY_RETENTION_HOURS=${CHAT_HISTORY_RETENTION_HOURS}
+      - USE_LOCAL_MODEL=${USE_LOCAL_MODEL}
+      - LOCAL_MODEL_NAME=${LOCAL_MODEL_NAME}
+      - OLLAMA_HOST=${OLLAMA_HOST:-http://ollama:11434}
     # No hard dependency on Ollama - backend will work with or without it
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]

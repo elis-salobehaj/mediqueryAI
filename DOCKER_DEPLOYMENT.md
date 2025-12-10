@@ -13,12 +13,16 @@ Complete guide for running the AI Healthcare Data Agent with Docker Compose.
 ### 2. Setup Environment
 
 ```bash
+### 2. Setup Environment
+
+```bash
 # Copy environment template
-cp .env.docker .env
+cp .env.example .env
+
 
 # Edit .env with your settings
 # For local model (free): USE_LOCAL_MODEL=true
-# For cloud API: USE_LOCAL_MODEL=false and add GEMINI_API_KEY
+# For cloud API: USE_LOCAL_MODEL=false and add GEMINI_API_KEY or ANTHROPIC_API_KEY
 ```
 
 ### 3. Start All Services

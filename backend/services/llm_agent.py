@@ -1,5 +1,8 @@
 import google.generativeai as genai
+from google.generativeai.types import HarmCategory, HarmBlockThreshold
+from google.api_core import exceptions
 import ollama
+import anthropic
 import os
 import logging
 from typing import Optional, Dict, Any
@@ -9,15 +12,28 @@ logger = logging.getLogger(__name__)
 class LLMAgent:
     def __init__(self):
         self.api_key = None
+        self.anthropic_key = os.getenv('ANTHROPIC_API_KEY')
+        self.anthropic_client = None
         self.model = None
         self.use_local = os.getenv('USE_LOCAL_MODEL', 'false').lower() == 'true'
         self.local_model = os.getenv('LOCAL_MODEL_NAME', 'qwen2.5:3b')
         self.ollama_host = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
         
+        # Safety Settings - Block None for medical data analysis
+        self.safety_settings = {
+            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+        }
+        
         if self.use_local:
             logger.info(f"Using local Ollama model: {self.local_model}")
         else:
-            logger.info("Using Google Gemini API")
+            logger.info("Using Cloud APIs (Google Gemini / Anthropic)")
+            if self.anthropic_key:
+                self.anthropic_client = anthropic.Anthropic(api_key=self.anthropic_key)
+                logger.info("Anthropic client initialized")
 
     def configure(self, api_key: str):
         """Configures the Gemini API client."""
@@ -27,7 +43,7 @@ class LLMAgent:
             
         self.api_key = api_key
         genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel('gemini-flash-latest')
+        self.model = genai.GenerativeModel('gemma-3-27b-it', safety_settings=self.safety_settings)
         logger.info("Configured Google Gemini API")
 
     def set_model(self, model_id: str):
@@ -36,14 +52,23 @@ class LLMAgent:
             logger.warning(f"Local mode enabled - ignoring model switch to {model_id}")
             return
             
+        # Handle Anthropic Models
+        if 'claude' in model_id:
+            if not self.anthropic_client:
+                 logger.warning("Anthropic API Key not found. Please set ANTHROPIC_API_KEY.")
+            self.model = model_id # Just store the ID for dispatch
+            logger.info(f"Switched model to: {model_id}")
+            return
+
+        # Handle Gemini Models
         if not self.api_key:
-             raise ValueError("API Key not configured.")
+             raise ValueError("Google API Key not configured.")
         try:
-            self.model = genai.GenerativeModel(model_id)
+            self.model = genai.GenerativeModel(model_id, safety_settings=self.safety_settings)
             logger.info(f"Switched model to: {model_id}")
         except Exception as e:
             logger.error(f"Failed to switch model to {model_id}: {e}")
-            self.model = genai.GenerativeModel('gemini-flash-latest')
+            self.model = genai.GenerativeModel('gemma-3-27b-it', safety_settings=self.safety_settings)
 
     def _call_ollama(self, prompt: str) -> str:
         """Call local Ollama model."""
@@ -64,6 +89,25 @@ class LLMAgent:
             logger.error(f"Ollama API call failed: {e}")
             logger.error(f"Make sure Ollama is running and model '{self.local_model}' is installed")
             logger.error(f"Install with: ollama pull {self.local_model}")
+            raise e
+
+    def _call_anthropic(self, prompt: str) -> str:
+        """Call Anthropic Cloud API."""
+        if not self.anthropic_client:
+            raise ValueError("Anthropic API Key not configured. Set ANTHROPIC_API_KEY in .env")
+        
+        try:
+            model_id = self.model if isinstance(self.model, str) and 'claude' in self.model else 'claude-3-5-sonnet-20241022'
+            message = self.anthropic_client.messages.create(
+                model=model_id,
+                max_tokens=1024,
+                messages=[
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            return message.content[0].text
+        except Exception as e:
+            logger.error(f"Anthropic API call failed: {e}")
             raise e
 
     def generate_sql(self, user_query: str, schema_str: str) -> Optional[str]:
@@ -92,52 +136,82 @@ Rules:
 
 User Request: {user_query}
 """
+        logger.debug(f"Generating SQL with model: {self.model}")
         try:
             if self.use_local:
                 sql = self._call_ollama(prompt)
+            elif isinstance(self.model, str) and 'claude' in self.model: 
+                # Anthropic Case
+                sql = self._call_anthropic(prompt)
             else:
-                if not self.model:
-                    raise ValueError("API Key not configured.")
+                # Google Gemini Case
+                if not self.model or isinstance(self.model, str): # Safety check if model is string (claude) but fell through or not init
+                     # Re-init default if needed or raise
+                     if not hasattr(self.model, 'generate_content'):
+                         self.model = genai.GenerativeModel('gemma-3-27b-it', safety_settings=self.safety_settings)
+
                 response = self.model.generate_content(prompt)
                 sql = response.text.strip()
             
+            logger.debug(f"Raw LLM Response: {sql}")
+
             # Cleanup if the model adds markdown despite instructions
             if sql.startswith("```"):
                 sql = sql.strip("`").replace("sql", "").strip()
+            
+            logger.debug(f"Cleaned SQL: {sql}")
             return sql
+        except exceptions.ResourceExhausted:
+            logger.warning("Google API Rate Limit Exceeded")
+            return "RATE_LIMIT"
+        except exceptions.InvalidArgument:
+            logger.error("Google API Invalid Argument (Check API Key)")
+            return "INVALID_KEY"
+        except exceptions.GoogleAPICallError as e:
+            logger.error(f"Google API Error: {e}")
+            return f"API_ERROR: {str(e)}"
         except Exception as e:
             logger.error(f"SQL generation failed: {e}")
             return None
 
     def generate_insight(self, user_query: str, data: Dict[str, Any]) -> str:
         """Generates a natural language insight/response based on the data."""
-        data_preview = str(data['data'])[:5000]
-        
-        prompt = f"""
-You are a healthcare data expert. The user asked: "{user_query}"
-We executed a SQL query and got the following data (truncated if too large):
-{data_preview}
-Row count: {data['row_count']}
+        try:
+            data_preview = str(data['data'])[:5000]
+            row_count = data['row_count']
+        except:
+             data_preview = "No data"
+             row_count = 0
+             
+        prompt = (
+            f"You are a healthcare data expert. The user asked: '{user_query}'\\n"
+            f"We executed a SQL query and got the following data (truncated if too large):\\n"
+            f"{data_preview}\\n"
+            f"Row count: {row_count}\\n"
+            f"Your task:\\n"
+            f"1. Answer the user's question clearly.\\n"
+            f"2. Identify potential patterns or KPI insights if visible.\\n"
+            f"3. If the data is empty, suggest what might be wrong or how to refine the query.\\n"
+            f"4. If the data corresponds to the question, perform a brief analysis.\\n"
+            f"Keep the response helpful, professional, and within 3-4 sentences unless more detail is needed."
+        )
 
-Your task:
-1. Answer the user's question clearly.
-2. Identify potential patterns or KPI insights if visible.
-3. If the data is empty, suggest what might be wrong or how to refine the query.
-4. If the data corresponds to the question, perform a brief analysis.
-
-Keep the response helpful, professional, and within 3-4 sentences unless more detail is needed.
-"""
         try:
             if self.use_local:
                 return self._call_ollama(prompt)
+            elif isinstance(self.model, str) and 'claude' in self.model:
+                return self._call_anthropic(prompt)
             else:
-                if not self.model:
-                    raise ValueError("API Key not configured.")
+                if not hasattr(self.model, 'generate_content'):
+                     self.model = genai.GenerativeModel('gemma-3-27b-it', safety_settings=self.safety_settings)
+                
                 response = self.model.generate_content(prompt)
                 return response.text.strip()
+        except exceptions.ResourceExhausted:
+            return "Analyzed data, but couldn't generate detailed insight due to API rate limits (quota exceeded)."
         except Exception as e:
             logger.error(f"Insight generation failed: {e}")
-            return "Could not generate insight due to an error."
+            return "I have the data but couldn't generate a summary insight."
 
     def determine_visualization(self, user_query: str, data: Dict[str, Any]) -> str:
         """Determines the best visualization type for the data using heuristics and LLM."""

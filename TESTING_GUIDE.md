@@ -144,7 +144,7 @@ docker-compose logs backend | Select-String "local"
 ```powershell
 # Edit .env
 # Change: USE_LOCAL_MODEL=false
-# Add: GEMINI_API_KEY=your_actual_key
+# Add: GEMINI_API_KEY=your_actual_key or ANTHROPIC_API_KEY=your_actual_key
 
 # Restart backend
 docker-compose restart backend
@@ -205,7 +205,7 @@ ab -n 100 -c 10 http://localhost:8000/health
 
 ### Test Model Switching
 
-1. Select "Gemini Flash" from dropdown
+1. Select "GEMMA 3 27B" or "GEMINI 2.5 FLASH LITE" from dropdown
 2. Ask a query
 3. Select "Gemini Pro" from dropdown
 4. Ask the same query
