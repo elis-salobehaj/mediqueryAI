@@ -4,3 +4,4 @@ python-dotenv
 google-generativeai
 pandas
 ollama
+anthropic>=0.25.0

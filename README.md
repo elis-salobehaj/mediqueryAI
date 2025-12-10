@@ -108,6 +108,10 @@ This will:
 ```bash
 git clone https://github.com/yourusername/antigravity-poc.git
 cd antigravity-poc
+
+# Create .env file at PROJECT ROOT
+cp .env.example .env
+vi .env  # Add your API key or set USE_LOCAL_MODEL=true
 ```
 
 #### 2. Backend Setup
@@ -121,10 +125,6 @@ source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
-
-# Create .env file
-cp .env.example .env
-nano .env  # Add your API key or set USE_LOCAL_MODEL=true
 ```
 
 #### 3. Frontend Setup
@@ -188,6 +188,9 @@ Edit `backend/.env` or `.env` (for Docker):
 # Google Gemini API Key (optional if using local model)
 GEMINI_API_KEY=your_api_key_here
 
+# Anthropic API Key (optional if using local model)
+ANTHROPIC_API_KEY=your_api_key_here
+
 # Chat History Configuration
 CHAT_HISTORY_RETENTION_HOURS=24
 
@@ -205,10 +208,10 @@ OLLAMA_HOST=http://localhost:11434
 - `llama3.2:3b` (Meta's model)
 - `gemma2:2b` (Lightweight)
 
-**Cloud (Google Gemini):**
-- `gemini-flash-latest` (Fast, recommended)
-- `gemini-pro-latest` (More capable)
-- `gemma-3-27b-it` (Open source via API)
+**Cloud Models (Recommended):**
+- `gemma-3-27b-it` (High Quota / Default)
+- `gemini-2.5-flash-lite` (Fast / Efficient)
+- `claude-3-5-sonnet` (Anthropic - requires `ANTHROPIC_API_KEY`)
 
 ---
 

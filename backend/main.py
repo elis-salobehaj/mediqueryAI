@@ -10,19 +10,31 @@ from services.database import db_service
 from services.llm_agent import llm_agent
 
 # Configure Logging
-logging.basicConfig(level=logging.INFO)
+# Configure Logging
+log_level = os.getenv("LOG_LEVEL", "DEBUG").upper()
+logging.basicConfig(
+    level=getattr(logging, log_level),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("debug.log"),
+        logging.StreamHandler()
+    ],
+    force=True
+)
 logger = logging.getLogger(__name__)
 # Force Reload Trigger
 
 from dotenv import load_dotenv
+from pathlib import Path
 
-# Load .env
-load_dotenv()
+# Load .env from project root (one level up from backend/)
+env_path = Path(__file__).parent.parent / '.env'
+load_dotenv(dotenv_path=env_path)
 
 # Models
 class QueryRequest(BaseModel):
     question: str
-    model_id: str = "gemini-flash-latest" 
+    model_id: str = "gemma-3-27b-it" # Default to High Quota model 
 
 class QueryResponse(BaseModel):
     sql: str
@@ -125,6 +137,36 @@ def query_data(request: QueryRequest = Body(...)):
         
         sql_query = llm_agent.generate_sql(request.question, schema)
         
+        if sql_query == "RATE_LIMIT":
+            chat_history.add_message(role="bot", content="Google API Rate Limit Exceeded. Please try again in a minute.")
+            return QueryResponse(
+                sql="",
+                data={"row_count": 0, "columns": [], "data": []},
+                insight="**Rate Limit Exceeded**: The Google Gemini API is temporarily blocking requests due to high traffic/quota. Please wait 1-2 minutes and try again, or switch to a local model.",
+                error="Rate Limit Exceeded",
+                visualization_type="table"
+            )
+
+        if sql_query == "INVALID_KEY":
+             chat_history.add_message(role="bot", content="Google API Key is invalid.")
+             return QueryResponse(
+                sql="",
+                data={"row_count": 0, "columns": [], "data": []},
+                insight="**Configuration Error**: The Google Gemini API Key appears to be invalid or expired. Please check your `.env` file.",
+                error="Invalid API Key",
+                visualization_type="table"
+             )
+        
+        if sql_query and sql_query.startswith("API_ERROR"):
+             chat_history.add_message(role="bot", content="External API Error.")
+             return QueryResponse(
+                sql="",
+                data={"row_count": 0, "columns": [], "data": []},
+                insight=f"**API Error**: {sql_query}",
+                error=sql_query,
+                visualization_type="table"
+             )
+
         if not sql_query or sql_query == "NO_MATCH":
             chat_history.add_message(role="bot", content="I couldn't find relevant data.")
             return QueryResponse(
@@ -174,7 +216,8 @@ def query_data(request: QueryRequest = Body(...)):
         )
     except Exception as e:
         import traceback
-        traceback.print_exc()
+        tb = traceback.format_exc()
+        logger.error(f"CRITICAL ERROR: {str(e)}\n{tb}")
         raise HTTPException(status_code=500, detail=f"CRITICAL ERROR: {str(e)}")
 
 if __name__ == "__main__":

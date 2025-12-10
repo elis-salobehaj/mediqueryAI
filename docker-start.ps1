@@ -34,7 +34,7 @@ if (-not (Test-Path ".env")) {
     Write-Host ""
     Write-Host "[WARNING] Please edit .env and configure:" -ForegroundColor Yellow
     Write-Host "   - USE_LOCAL_MODEL=true (for free local model)" -ForegroundColor White
-    Write-Host "   - Or set USE_LOCAL_MODEL=false and add GEMINI_API_KEY for cloud mode" -ForegroundColor White
+    Write-Host "   - Or set USE_LOCAL_MODEL=false and add GEMINI_API_KEY or ANTHROPIC_API_KEY for cloud mode" -ForegroundColor White
     Write-Host ""
     Read-Host "Press Enter to continue"
 }

@@ -31,7 +31,7 @@ if [ ! -f ".env" ]; then
     echo ""
     echo "⚠️  Please edit .env and configure:"
     echo "   - USE_LOCAL_MODEL=true (for free local model)"
-    echo "   - Or set USE_LOCAL_MODEL=false and add GEMINI_API_KEY for cloud mode"
+    echo "   - Or set USE_LOCAL_MODEL=false and add GEMINI_API_KEY or ANTHROPIC_API_KEY for cloud mode"
     echo ""
     read -p "Press Enter to continue..."
 fi
