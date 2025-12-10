@@ -70,7 +70,7 @@ This will:
 | Choropleth Map | Pie Chart | Bar Chart |
 |:---:|:---:|:---:|
 | ![Choropleth Map](docs/images/choropleth_map.png) | ![Pie Chart](docs/images/pie_chart.png) | ![Bar Chart](docs/images/bar_chart.png) |
-*Patient count by state, Gender distribution, Average age by state*
+| *Patient count by state* | *Gender distribution* | *Average age by state* |
 
 ## Tech Stack
 
