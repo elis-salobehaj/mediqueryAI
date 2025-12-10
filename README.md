@@ -94,6 +94,38 @@ This will:
 
 ---
 
+## Docker Deployment
+
+### Quick Start
+
+```bash
+# Copy environment file
+cp .env.docker .env
+
+# Start all services
+docker-compose up -d
+
+# Pull Ollama model
+docker exec -it mediquery-ai-ollama ollama pull qwen2.5:3b
+
+# Access the application
+# Frontend: http://localhost:3000
+# Backend:  http://localhost:8000
+# API Docs: http://localhost:8000/docs
+```
+
+### Services
+
+| Service | Port | Description |
+|---------|------|-------------|
+| **Frontend** | 3000 | React + Nginx |
+| **Backend** | 8000 | FastAPI + Python |
+| **Ollama** | 11434 | Local LLM (Qwen2.5:3b) |
+
+**Full Docker guide:** [DOCKER_DEPLOYMENT.md](DOCKER_DEPLOYMENT.md)
+
+---
+
 ## Manual Installation
 
 ### Prerequisites
@@ -106,8 +138,8 @@ This will:
 
 #### 1. Clone the Repository
 ```bash
-git clone https://github.com/yourusername/antigravity-poc.git
-cd antigravity-poc
+git clone https://github.com/elis-salobehaj/mediqueryAI.git
+cd mediqueryAI
 
 # Create .env file at PROJECT ROOT
 cp .env.example .env
@@ -245,37 +277,7 @@ OLLAMA_HOST=http://localhost:11434
 
 ---
 
-## Docker Deployment
 
-### Quick Start
-
-```bash
-# Copy environment file
-cp .env.docker .env
-
-# Start all services
-docker-compose up -d
-
-# Pull Ollama model
-docker exec -it antigravity-ollama ollama pull qwen2.5:3b
-
-# Access the application
-# Frontend: http://localhost:3000
-# Backend:  http://localhost:8000
-# API Docs: http://localhost:8000/docs
-```
-
-### Services
-
-| Service | Port | Description |
-|---------|------|-------------|
-| **Frontend** | 3000 | React + Nginx |
-| **Backend** | 8000 | FastAPI + Python |
-| **Ollama** | 11434 | Local LLM (Qwen2.5:3b) |
-
-**Full Docker guide:** [DOCKER_DEPLOYMENT.md](DOCKER_DEPLOYMENT.md)
-
----
 
 ## Local Model Setup (Ollama)
 
@@ -359,7 +361,7 @@ The system intelligently selects from **60+ Plotly.js chart types**:
 
 **Ollama model not found:**
 ```bash
-docker exec -it antigravity-ollama ollama pull qwen2.5:3b
+docker exec -it mediquery-ai-ollama ollama pull qwen2.5:3b
 ```
 
 **Backend can't connect to Ollama:**

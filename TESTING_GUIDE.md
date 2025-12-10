@@ -91,7 +91,7 @@ Since Docker is not installed, we'll test the currently running services:
 
 # Or manually:
 docker-compose up -d
-docker exec -it antigravity-ollama ollama pull qwen2.5:3b
+docker exec -it mediquery-ai-ollama ollama pull qwen2.5:3b
 ```
 
 ### Step 2: Verify Services
@@ -104,7 +104,7 @@ docker-compose ps
 # NAME                    STATUS
 # antigravity-backend     Up (healthy)
 # antigravity-frontend    Up (healthy)
-# antigravity-ollama      Up (healthy)
+# mediquery-ai-ollama      Up (healthy)
 ```
 
 ### Step 3: Test Endpoints
@@ -246,7 +246,7 @@ docker inspect antigravity-backend | Select-String "Health"
 docker stats
 
 # Expected:
-# antigravity-ollama: ~2-4GB RAM
+# mediquery-ai-ollama: ~2-4GB RAM
 # antigravity-backend: ~500MB RAM
 # antigravity-frontend: ~50MB RAM
 ```

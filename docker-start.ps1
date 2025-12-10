@@ -69,10 +69,10 @@ if ($useLocal -eq "true") {
     Write-Host "Pulling Qwen2.5:3b model (~2GB download)..." -ForegroundColor Yellow
     Write-Host "This may take a few minutes..." -ForegroundColor White
 
-    docker exec -it antigravity-ollama ollama pull qwen2.5:3b
+    docker exec -it mediquery-ai-ollama ollama pull qwen2.5:3b
 
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "[X] Failed to pull model. Please try running 'docker exec -it antigravity-ollama ollama pull qwen2.5:3b' manually." -ForegroundColor Red
+        Write-Host "[X] Failed to pull model. Please try running 'docker exec -it mediquery-ai-ollama ollama pull qwen2.5:3b' manually." -ForegroundColor Red
     }
     if ($LASTEXITCODE -eq 0) {
         Write-Host "[OK] Model pulled successfully" -ForegroundColor Green

@@ -6,7 +6,7 @@ services:
     build:
       context: .
       dockerfile: ollama.Dockerfile
-    container_name: antigravity-ollama
+    container_name: mediquery-ai-ollama
     ports:
       - "11434:11434"
     volumes:
