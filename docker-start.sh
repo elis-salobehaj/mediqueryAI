@@ -54,7 +54,7 @@ if [ "$USE_LOCAL" = "true" ]; then
     echo ""
     echo "Pulling Qwen2.5:3b model (~2GB download)..."
     echo "This may take a few minutes..."
-    docker exec -it antigravity-ollama ollama pull qwen2.5:3b
+    docker exec -it mediquery-ai-ollama ollama pull qwen2.5:3b
 else
     echo "☁️  Cloud mode detected - starting without Ollama..."
     docker compose up -d

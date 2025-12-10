@@ -42,10 +42,10 @@ docker compose ps
 
 ```bash
 # Pull the Qwen2.5 model (~2GB)
-docker exec -it antigravity-ollama ollama pull qwen2.5:3b
+docker exec -it mediquery-ai-ollama ollama pull qwen2.5:3b
 
 # Verify model is installed
-docker exec -it antigravity-ollama ollama list
+docker exec -it mediquery-ai-ollama ollama list
 ```
 
 ### 5. Access the Application
@@ -84,7 +84,7 @@ After connecting, access on your local machine:
 ## Services Overview
 
 ### 🤖 Ollama (Local LLM)
-- **Container**: `antigravity-ollama`
+- **Container**: `mediquery-ai-ollama`
 - **Port**: 11434
 - **Volume**: `ollama_data` (persists models)
 - **Model**: qwen2.5:3b (2GB)
@@ -126,16 +126,16 @@ docker compose logs -f ollama
 
 ```bash
 # List installed models
-docker exec -it antigravity-ollama ollama list
+docker exec -it mediquery-ai-ollama ollama list
 
 # Pull a different model
-docker exec -it antigravity-ollama ollama pull phi3:mini
+docker exec -it mediquery-ai-ollama ollama pull phi3:mini
 
 # Remove a model
-docker exec -it antigravity-ollama ollama rm qwen2.5:3b
+docker exec -it mediquery-ai-ollama ollama rm qwen2.5:3b
 
 # Test model
-docker exec -it antigravity-ollama ollama run qwen2.5:3b "SELECT * FROM patients LIMIT 1"
+docker exec -it mediquery-ai-ollama ollama run qwen2.5:3b "SELECT * FROM patients LIMIT 1"
 ```
 
 ### Development Mode
@@ -250,10 +250,10 @@ docker compose up -d
 
 ```bash
 # Pull the model
-docker exec -it antigravity-ollama ollama pull qwen2.5:3b
+docker exec -it mediquery-ai-ollama ollama pull qwen2.5:3b
 
 # Check if it's installed
-docker exec -it antigravity-ollama ollama list
+docker exec -it mediquery-ai-ollama ollama list
 ```
 
 ### Backend Can't Connect to Ollama
@@ -263,7 +263,7 @@ docker exec -it antigravity-ollama ollama list
 docker compose ps ollama
 
 # Check Ollama health
-docker exec -it antigravity-ollama curl http://localhost:11434/api/tags
+docker exec -it mediquery-ai-ollama curl http://localhost:11434/api/tags
 
 # Restart services in order
 docker compose restart ollama
@@ -294,7 +294,7 @@ ports:
 
 ```bash
 # Use a smaller model
-docker exec -it antigravity-ollama ollama pull gemma2:2b
+docker exec -it mediquery-ai-ollama ollama pull gemma2:2b
 
 # Update .env
 LOCAL_MODEL_NAME=gemma2:2b
@@ -389,7 +389,7 @@ docker compose restart
 docker stats
 
 # Specific container
-docker stats antigravity-ollama
+docker stats mediquery-ai-ollama
 ```
 
 ### Health Checks
@@ -438,7 +438,7 @@ docker system prune -a --volumes
 ## Next Steps
 
 1. ✅ Start services: `docker compose up -d`
-2. ✅ Pull model: `docker exec -it antigravity-ollama ollama pull qwen2.5:3b`
+2. ✅ Pull model: `docker exec -it mediquery-ai-ollama ollama pull qwen2.5:3b`
 3. ✅ Access app: http://localhost:3000
 4. ✅ Test queries and visualizations
 5. ✅ Monitor logs: `docker compose logs -f`
