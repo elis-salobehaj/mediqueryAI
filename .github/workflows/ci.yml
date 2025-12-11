@@ -32,5 +32,6 @@ jobs:
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         CHAT_HISTORY_RETENTION_HOURS: 24
         JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+        CI: true
       run: |
         python -m pytest

@@ -14,8 +14,8 @@ def test_llm_agent_history_integration(monkeypatch):
     llm_agent.use_local = False
     
     history = [
-        {"role": "user", "content": "Who is sick?"},
-        {"role": "bot", "content": "John Doe is sick."}
+        {"role": "user", "text": "Who is sick?"},
+        {"role": "bot", "text": "John Doe is sick."}
     ]
     
     # We want to verify that history makes it into the prompt.
