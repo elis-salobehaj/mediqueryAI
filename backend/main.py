@@ -1,15 +1,32 @@
+from dotenv import load_dotenv
+from pathlib import Path
+import os
+
+# Load .env from project root (one level up from backend/)
+# MUST BE DONE BEFORE IMPORTING SERVICES
+env_path = Path(__file__).resolve().parent.parent / '.env'
+load_dotenv(dotenv_path=env_path)
+
 from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import logging
-import os
 from contextlib import asynccontextmanager
 import asyncio
 
 from services.database import db_service
+# Duplicate import removed
 from services.llm_agent import llm_agent
+from services.auth_service import auth_service
 
-# Configure Logging
+# Auth Deps
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi import Depends, status
+from datetime import timedelta
+from jose import JWTError, jwt
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
+
 # Configure Logging
 log_level = os.getenv("LOG_LEVEL", "DEBUG").upper()
 logging.basicConfig(
@@ -22,14 +39,6 @@ logging.basicConfig(
     force=True
 )
 logger = logging.getLogger(__name__)
-# Force Reload Trigger
-
-from dotenv import load_dotenv
-from pathlib import Path
-
-# Load .env from project root (one level up from backend/)
-env_path = Path(__file__).parent.parent / '.env'
-load_dotenv(dotenv_path=env_path)
 
 # Models
 class QueryRequest(BaseModel):
@@ -41,7 +50,42 @@ class QueryResponse(BaseModel):
     data: dict
     insight: str
     visualization_type: str = "table" # 'bar', 'pie', 'line', 'scatter', 'map', 'table'
+    visualization_type: str = "table" # 'bar', 'pie', 'line', 'scatter', 'map', 'table'
     error: str = None
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class User(BaseModel):
+    username: str
+    email: str | None = None
+    full_name: str | None = None
+    disabled: bool | None = None
+
+class UserCreate(User):
+    password: str
+
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "supersecretkey")
+        ALGORITHM = "HS256"
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+             raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    
+    user_dict = auth_service.get_user(username)
+    if user_dict is None:
+        raise credentials_exception
+    return user_dict
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -108,17 +152,52 @@ async def health_check():
         "tables": db_service.get_schema().count("Table:")
     }
 
+# --- Auth Routes ---
+@app.post("/auth/token", response_model=Token)
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    user_dict = auth_service.get_user(form_data.username)
+    if not user_dict or not auth_service.verify_password(form_data.password, user_dict['hashed_password']):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=30)
+    access_token = auth_service.create_access_token(
+        data={"sub": user_dict['username']}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@app.post("/auth/register", response_model=Token)
+async def register_user(user: UserCreate):
+    success = auth_service.create_user(user.username, user.password, user.full_name, user.email)
+    if not success:
+        raise HTTPException(status_code=400, detail="Username already registered")
+    
+    # Auto login
+    access_token = auth_service.create_access_token(data={"sub": user.username})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@app.post("/auth/guest", response_model=Token)
+async def login_guest():
+    """Creates a guest account and returns a token."""
+    guest_username = auth_service.create_guest_user()
+    access_token = auth_service.create_access_token(data={"sub": guest_username}, expires_delta=timedelta(hours=24))
+    return {"access_token": access_token, "token_type": "bearer"}
+
+# --- Protected Routes ---
+
 @app.get("/history")
-async def get_history():
+async def get_history(current_user: dict = Depends(get_current_user)):
     """Returns recent chat messages."""
     messages = chat_history.get_recent_messages()
     return {"messages": messages}
 
 @app.post("/query", response_model=QueryResponse)
-def query_data(request: QueryRequest = Body(...)):
+def query_data(request: QueryRequest = Body(...), current_user: dict = Depends(get_current_user)):
     try:
-        # 1. Save User Message
-        chat_history.add_message(role="user", content=request.question)
+        # 1. Save User Message (Include Username)
+        chat_history.add_message(role="user", content=request.question, metadata={"user": current_user['username']})
 
         # 2. Ensure configured
         if not llm_agent.api_key:
@@ -134,8 +213,11 @@ def query_data(request: QueryRequest = Body(...)):
         # 4. Generate SQL (Pass model_id)
         if request.model_id:
             llm_agent.set_model(request.model_id)
+
+        # Get recent history for context (last 5 messages)
+        recent_history = chat_history.get_recent_messages(hours=24)
         
-        sql_query = llm_agent.generate_sql(request.question, schema)
+        sql_query = llm_agent.generate_sql(request.question, schema, history=recent_history)
         
         if sql_query == "RATE_LIMIT":
             chat_history.add_message(role="bot", content="Google API Rate Limit Exceeded. Please try again in a minute.")
@@ -195,7 +277,7 @@ def query_data(request: QueryRequest = Body(...)):
         vis_type = llm_agent.determine_visualization(request.question, results)
 
         # 7. Generate Insight
-        insight = llm_agent.generate_insight(request.question, results)
+        insight = llm_agent.generate_insight(request.question, results, history=recent_history)
         
         # 8. Save Bot Response
         chat_history.add_message(

@@ -110,12 +110,23 @@ class LLMAgent:
             logger.error(f"Anthropic API call failed: {e}")
             raise e
 
-    def generate_sql(self, user_query: str, schema_str: str) -> Optional[str]:
-        """Converts natural language query to SQL based on the schema."""
+    def generate_sql(self, user_query: str, schema_str: str, history: list = None) -> Optional[str]:
+        """Converts natural language query to SQL based on the schema and history."""
+        # Format history for context
+        history_context = ""
+        if history:
+            # Take last 5 messages, excluding the current one if it's already there
+            relevant_history = history[-5:] 
+            history_str = "\n".join([f"{msg['role']}: {msg['text']}" for msg in relevant_history])
+            history_context = f"Chat History:\n{history_str}\n\n"
+
         prompt = f"""
 You are an expert SQLite developer. Convert the following natural language request into a valid SQL query.
 The database has the following schema:
 {schema_str}
+
+{history_context}
+User Request: {user_query}
 
 Rules:
 1. Return ONLY the SQL query. No markdown formatting (no ```sql), no explanation.
@@ -133,6 +144,9 @@ Rules:
    - If you need to join tables, use patient_id for the JOIN but SELECT the name for display
    - Example: SELECT p.name, v.diagnosis FROM patients p JOIN visits v ON p.patient_id = v.patient_id
    - Never show patient_id in the final results unless explicitly asked for IDs
+8. **Context Awareness**:
+   - If the request is a follow-up (e.g., "which of them...", "show me the details"), use the Chat History to infer context.
+   - You may need to incorporate filters or IDs from previous queries shown in history.
 
 User Request: {user_query}
 """
@@ -174,7 +188,7 @@ User Request: {user_query}
             logger.error(f"SQL generation failed: {e}")
             return None
 
-    def generate_insight(self, user_query: str, data: Dict[str, Any]) -> str:
+    def generate_insight(self, user_query: str, data: Dict[str, Any], history: list = None) -> str:
         """Generates a natural language insight/response based on the data."""
         try:
             data_preview = str(data['data'])[:5000]

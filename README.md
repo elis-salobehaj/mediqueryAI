@@ -58,8 +58,8 @@ This will:
 
 - 🤖 **Natural Language Queries**: Ask questions in plain English about healthcare data
 - 📊 **60+ Interactive Visualizations**: Powered by Plotly.js with real-time chart type switching
-- 🗺️ **Geographic Mapping**: Choropleth maps for state-level data analysis
-- 💬 **Persistent Chat History**: SQLite-backed conversation storage with configurable retention
+- 🔐 **Authentication & Security**: Sci-Fi themed Login/Register, JWT protection, and GitHub Secrets integration
+- 💬 **Persistent Chat History**: Context-aware conversations suitable for follow-up questions
 - 🎨 **Futuristic HUD Interface**: Cyberpunk-inspired dark theme with glassmorphism effects
 - 🔄 **Smart Visualization Selection**: AI-powered chart type recommendation based on data structure
 - 🎯 **Hybrid LLM Support**: Local models (Ollama) or Cloud (Google Gemini)
@@ -445,6 +445,7 @@ For production use:
 - Implement HTTPS
 - Secure Ollama endpoint
 - Use Docker secrets for sensitive data
+- **JWT_SECRET_KEY**: Ensure this is set to a strong random string in production (used for signing tokens)
 
 ---
 

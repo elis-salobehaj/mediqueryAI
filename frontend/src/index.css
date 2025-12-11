@@ -1,5 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   /* Futuristic HUD Palette */
   --hud-bg-dark: #020408;
@@ -263,4 +267,16 @@ body {
 
 .hexagon-clip {
   clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+
+.clip-corner {
+  clip-path: polygon(20px 0, 100% 0,
+      100% calc(100% - 20px), calc(100% - 20px) 100%,
+      0 100%, 0 20px);
+}
+
+.clip-button {
+  clip-path: polygon(10px 0, 100% 0,
+      100% calc(100% - 10px), calc(100% - 10px) 100%,
+      0 100%, 0 10px);
 }
