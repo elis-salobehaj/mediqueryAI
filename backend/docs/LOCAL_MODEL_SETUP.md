@@ -26,13 +26,16 @@ brew install ollama
 ### 2. Pull the Model
 
 ```bash
-# Pull Qwen2.5 3B (recommended - 2GB)
-ollama pull qwen2.5:3b
+# Pull Qwen 3 (Best suitable - 7B)
+ollama pull qwen3:7b
 
-# Or try other models:
-ollama pull phi3:mini        # Phi-3 Mini (3.8B - 2.3GB)
-ollama pull llama3.2:3b      # Llama 3.2 (3B - 2GB)
-ollama pull gemma2:2b        # Gemma 2 (2B - 1.4GB)
+# Pull Gemma 3 (4B - lightweight & capable)
+ollama pull gemma3:4b
+
+# Other options:
+ollama pull qwen2.5:3b      # Previous generation (very fast)
+ollama pull phi3:mini       # Phi-3 Mini
+
 ```
 
 ### 3. Verify Installation
@@ -42,8 +45,9 @@ ollama pull gemma2:2b        # Gemma 2 (2B - 1.4GB)
 ollama list
 
 # Test the model
-ollama run qwen2.5:3b
+ollama run qwen3:7b
 >>> Hello, how are you?
+
 ```
 
 ### 4. Configure the Application
@@ -51,7 +55,7 @@ ollama run qwen2.5:3b
 Edit `backend/.env`:
 ```bash
 USE_LOCAL_MODEL=true
-LOCAL_MODEL_NAME=qwen2.5:3b
+LOCAL_MODEL_NAME=qwen3:7b
 OLLAMA_HOST=http://localhost:11434
 ```
 
@@ -75,10 +79,13 @@ uvicorn main:app --reload
 
 | Model | Size | RAM | Speed | Quality | Best For |
 |-------|------|-----|-------|---------|----------|
-| **qwen2.5:3b** ⭐ | 2GB | 4-8GB | ⚡⚡⚡ | ⭐⭐⭐⭐⭐ | Coding, SQL, reasoning |
-| **phi3:mini** | 2.3GB | 4-8GB | ⚡⚡⚡ | ⭐⭐⭐⭐ | General purpose |
-| **llama3.2:3b** | 2GB | 4-8GB | ⚡⚡⚡ | ⭐⭐⭐⭐ | Instruction following |
-| **gemma2:2b** | 1.4GB | 3-6GB | ⚡⚡⚡⚡ | ⭐⭐⭐ | Lightweight tasks |
+| Model | Size | RAM | Speed | Quality | Best For |
+|-------|------|-----|-------|---------|----------|
+| **qwen3:7b** ⭐ | 4.5GB | 8GB | ⚡⚡ | ⭐⭐⭐⭐⭐+ | Coding, Reasoning, SQL (Top Choice) |
+| **gemma3:4b** | 2.8GB | 4-6GB | ⚡⚡⚡ | ⭐⭐⭐⭐ | General, Creative, Instruction |
+| **qwen2.5:3b** | 2GB | 4GB | ⚡⚡⚡ | ⭐⭐⭐⭐ | Fast Coding |
+| **phi3:mini** | 2.3GB | 4GB | ⚡⚡⚡ | ⭐⭐⭐⭐ | General purpose |
+
 
 ## Switching Between Local and Cloud
 
@@ -86,7 +93,8 @@ uvicorn main:app --reload
 ```bash
 # In backend/.env
 USE_LOCAL_MODEL=true
-LOCAL_MODEL_NAME=qwen2.5:3b
+LOCAL_MODEL_NAME=qwen3:7b
+
 ```
 
 ### Use Google Gemini API (Higher Quality)

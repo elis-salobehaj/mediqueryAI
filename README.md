@@ -235,10 +235,11 @@ OLLAMA_HOST=http://localhost:11434
 ### Available Models
 
 **Local (Ollama):**
-- `qwen2.5:3b` (Recommended - 2GB, excellent for SQL)
+- `qwen3:7b` (Recommended - Best balance of speed/quality)
+- `gemma3:4b` (New - High efficiency)
+- `qwen2.5:3b` (Previous gen, very fast)
 - `phi3:mini` (3.8B parameters)
-- `llama3.2:3b` (Meta's model)
-- `gemma2:2b` (Lightweight)
+
 
 **Cloud Models (Recommended):**
 - `gemma-3-27b-it` (High Quota / Default)
