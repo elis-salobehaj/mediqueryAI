@@ -21,13 +21,13 @@ services:
       start_period: 40s
     restart: unless-stopped
     # Uncomment for GPU support (NVIDIA)
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
   # Backend service (FastAPI)
   backend:
