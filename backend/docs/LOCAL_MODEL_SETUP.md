@@ -162,6 +162,19 @@ rocm-smi
 
 # macOS
 # GPU is used automatically
+
+### Docker GPU Setup (NVIDIA)
+
+1. **Install NVIDIA Container Toolkit**:
+   - Follow the [official guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html).
+
+2. **Enable in docker-compose.yml**:
+   - The GPU section is now enabled by default.
+   - It reserves 1 NVIDIA GPU for the Ollama container.
+
+3. **Verify**:
+   - Run `docker compose up -d`
+   - Check logs: `docker compose logs ollama` (look for "detected GPU")
 ```
 
 ## Benefits of Local Models
