@@ -1,0 +1,13 @@
+{
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "package-name": "mediquery-ai"
+    },
+    "frontend": {
+      "release-type": "node",
+      "package-name": "@mediquery-ai/frontend"
+    }
+  },
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
+}
