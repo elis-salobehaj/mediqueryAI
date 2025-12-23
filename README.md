@@ -21,7 +21,7 @@ chmod +x docker-start.sh
 ```
 
 This will:
-- ✅ Start Ollama (local LLM - Qwen2.5:3b)
+- ✅ Start Ollama (local LLM - qwen3:latest)
 - ✅ Start FastAPI backend
 - ✅ Start React frontend with Nginx
 - ✅ Pull the AI model (~2GB)
@@ -126,90 +126,6 @@ docker exec -it mediquery-ai-ollama ollama pull qwen2.5:3b
 
 ---
 
-## Manual Installation
-
-### Prerequisites
-
-- **Python 3.9+**
-- **Node.js 23+** and npm
-- **Google Gemini API Key** ([Get one here](https://makersuite.google.com/app/apikey)) - Optional if using local model
-
-### Ubuntu/Linux
-
-#### 1. Clone the Repository
-```bash
-git clone https://github.com/elis-salobehaj/mediqueryAI.git
-cd mediqueryAI
-
-# Create .env file at PROJECT ROOT
-cp .env.example .env
-vi .env  # Add your API key or set USE_LOCAL_MODEL=true
-```
-
-#### 2. Backend Setup
-
-```bash
-cd backend
-
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-#### 3. Frontend Setup
-
-```bash
-cd ../frontend
-npm install --legacy-peer-deps
-```
-
-#### 4. Running the Application
-
-**Terminal 1 - Backend:**
-```bash
-cd backend
-source venv/bin/activate
-uvicorn main:app --reload
-```
-
-**Terminal 2 - Frontend:**
-```bash
-cd frontend
-npm run dev
-```
-
-Access at: http://localhost:5173
-
-### Windows
-
-```powershell
-# Backend
-cd backend
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env
-# Edit .env with your settings
-
-# Frontend (new terminal)
-cd frontend
-npm install --legacy-peer-deps
-
-# Run backend
-cd backend
-venv\Scripts\activate
-uvicorn main:app --reload
-
-# Run frontend (new terminal)
-cd frontend
-npm run dev
-```
-
----
-
 ## Configuration
 
 ### Environment Variables
@@ -235,10 +151,9 @@ OLLAMA_HOST=http://localhost:11434
 ### Available Models
 
 **Local (Ollama):**
-- `qwen3:7b` (Recommended - Best balance of speed/quality)
+- `qwen3:latest` (Recommended - Best balance of speed/quality)
 - `gemma3:4b` (New - High efficiency)
 - `qwen2.5:3b` (Previous gen, very fast)
-- `phi3:mini` (3.8B parameters)
 
 
 **Cloud Models (Recommended):**

@@ -18,6 +18,7 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
+    "esModuleInterop": true,
     "noEmit": true,
     "jsx": "react-jsx",
     /* Linting */
@@ -30,5 +31,13 @@
   },
   "include": [
     "src"
+  ],
+  "exclude": [
+    "src/**/__tests__/*",
+    "src/**/*.test.tsx",
+    "src/**/*.test.ts",
+    "src/**/*.spec.tsx",
+    "src/**/*.spec.ts",
+    "tests/**/*"
   ]
 }

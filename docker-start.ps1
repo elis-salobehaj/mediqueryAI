@@ -44,7 +44,8 @@ $useLocal = "false" # Default value
 if (Test-Path ".env") {
     $envContent = Get-Content .env | Select-String "USE_LOCAL_MODEL"
     if ($envContent) {
-        $useLocal = $envContent.ToString().Split('=')[1].Trim()
+        # Split by comment hash (#), take the first part, then split by =, take the second part, and trim.
+        $useLocal = $envContent.ToString().Split('#')[0].Split('=')[1].Trim()
     }
 }
 
@@ -59,26 +60,15 @@ if ($useLocal -eq "true") {
         Write-Host "[X] Failed to start Docker services" -ForegroundColor Red
         exit 1
     }
-
-    Write-Host ""
-    Write-Host "Waiting for services to start..." -ForegroundColor Yellow
-    Start-Sleep -Seconds 10
-    
-    # Pull Ollama model
-    Write-Host ""
-    Write-Host "Pulling Qwen2.5:3b model (~2GB download)..." -ForegroundColor Yellow
-    Write-Host "This may take a few minutes..." -ForegroundColor White
-
-    docker exec -it mediquery-ai-ollama ollama pull qwen2.5:3b
-
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "[X] Failed to pull model. Please try running 'docker exec -it mediquery-ai-ollama ollama pull qwen2.5:3b' manually." -ForegroundColor Red
+    switch ($LASTEXITCODE) {
+        0 { 
+            Write-Host "[OK] Containers started successfully" -ForegroundColor Green
+            Write-Host "Note: Ollama is pulling models in the background. This may take a few minutes." -ForegroundColor Yellow
+        }
+        default { 
+            Write-Host "[X] Failed to start containers." -ForegroundColor Red
+        }
     }
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "[OK] Model pulled successfully" -ForegroundColor Green
-    }
-    
-    Write-Host "Setting Qwen2.5:3b as default..." -ForegroundColor Yellow
 } else {
     Write-Host "[CLOUD] Cloud mode detected - starting without Ollama..." -ForegroundColor Cyan
     docker compose up -d
@@ -90,11 +80,11 @@ Write-Host "  Setup Complete!" -ForegroundColor Green
 Write-Host "=========================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Services:" -ForegroundColor Yellow
-Write-Host "  Frontend:  http://localhost:3000" -ForegroundColor White
-Write-Host "  Backend:   http://localhost:8000" -ForegroundColor White
+Write-Host "  Frontend:  http://localhost:3000 (Container: mediquery-ai-frontend)" -ForegroundColor White
+Write-Host "  Backend:   http://localhost:8000 (Container: mediquery-ai-backend)" -ForegroundColor White
 Write-Host "  API Docs:  http://localhost:8000/docs" -ForegroundColor White
 if ($useLocal -eq "true") {
-    Write-Host "  Ollama:    http://localhost:11434" -ForegroundColor White
+    Write-Host "  Ollama:    http://localhost:11434 (Container: mediquery-ai-ollama)" -ForegroundColor White
 }
 Write-Host ""
 Write-Host "Useful commands:" -ForegroundColor Yellow

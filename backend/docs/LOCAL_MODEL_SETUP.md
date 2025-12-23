@@ -2,77 +2,36 @@
 
 This guide explains how to set up and use local open-source models with Ollama.
 
-## Quick Start
+## Quick Start (Docker Only)
 
-### 1. Install Ollama
+We have removed the need for local Ollama installation. The project now runs entirely within Docker with NVIDIA GPU support.
 
-**Windows:**
-```powershell
-# Download and install from: https://ollama.com/download
-# Or use winget:
-winget install Ollama.Ollama
-```
+### 1. Prerequisites
 
-**Ubuntu/Linux:**
-```bash
-curl -fsSL https://ollama.com/install.sh | sh
-```
+- **Docker Desktop** installed
+- **NVIDIA Container Toolkit** (for Linux) or proper NVIDIA Drivers (Windows/WSL2)
+- **8GB RAM minimum**
 
-**macOS:**
-```bash
-brew install ollama
-```
+### 2. Configure Environment
 
-### 2. Pull the Model
-
-```bash
-# Pull Qwen 3 (Best suitable - 7B)
-ollama pull qwen3:7b
-
-# Pull Gemma 3 (4B - lightweight & capable)
-ollama pull gemma3:4b
-
-# Other options:
-ollama pull qwen2.5:3b      # Previous generation (very fast)
-ollama pull phi3:mini       # Phi-3 Mini
-
-```
-
-### 3. Verify Installation
-
-```bash
-# List installed models
-ollama list
-
-# Test the model
-ollama run qwen3:7b
->>> Hello, how are you?
-
-```
-
-### 4. Configure the Application
-
-Edit `backend/.env`:
+Edit `backend/.env` (create from `.env.example`):
 ```bash
 USE_LOCAL_MODEL=true
-LOCAL_MODEL_NAME=qwen3:7b
-OLLAMA_HOST=http://localhost:11434
+LOCAL_MODEL_NAME=qwen3:latest
+OLLAMA_HOST=http://ollama:11434  # Use the container name 'ollama'
 ```
 
-### 5. Install Python Dependencies
+### 3. Start Application
 
 ```bash
-cd backend
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install ollama
+docker compose up -d
 ```
+The Ollama container will automatically pull `qwen3:latest`, `gemma3:4b`, and `qwen2.5:3b` on the first run.
 
-### 6. Restart the Backend
+### 4. Verify GPU Usage
 
 ```bash
-# The backend will auto-reload if already running
-# Or restart manually:
-uvicorn main:app --reload
+docker compose logs ollama | grep "GPU"
 ```
 
 ## Model Comparison
@@ -81,7 +40,7 @@ uvicorn main:app --reload
 |-------|------|-----|-------|---------|----------|
 | Model | Size | RAM | Speed | Quality | Best For |
 |-------|------|-----|-------|---------|----------|
-| **qwen3:7b** ⭐ | 4.5GB | 8GB | ⚡⚡ | ⭐⭐⭐⭐⭐+ | Coding, Reasoning, SQL (Top Choice) |
+| **qwen3:latest** ⭐ | 4.5GB | 8GB | ⚡⚡ | ⭐⭐⭐⭐⭐+ | Coding, Reasoning, SQL (Top Choice) |
 | **gemma3:4b** | 2.8GB | 4-6GB | ⚡⚡⚡ | ⭐⭐⭐⭐ | General, Creative, Instruction |
 | **qwen2.5:3b** | 2GB | 4GB | ⚡⚡⚡ | ⭐⭐⭐⭐ | Fast Coding |
 | **phi3:mini** | 2.3GB | 4GB | ⚡⚡⚡ | ⭐⭐⭐⭐ | General purpose |
@@ -93,7 +52,7 @@ uvicorn main:app --reload
 ```bash
 # In backend/.env
 USE_LOCAL_MODEL=true
-LOCAL_MODEL_NAME=qwen3:7b
+LOCAL_MODEL_NAME=qwen3:latest
 
 ```
 
