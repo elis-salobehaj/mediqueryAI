@@ -34,7 +34,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: antigravity-backend
+    container_name: mediquery-ai-backend
     ports:
       - "8000:8000"
     volumes:
@@ -46,7 +46,7 @@ services:
       - CHAT_HISTORY_RETENTION_HOURS=${CHAT_HISTORY_RETENTION_HOURS}
       - USE_LOCAL_MODEL=${USE_LOCAL_MODEL}
       - LOCAL_MODEL_NAME=${LOCAL_MODEL_NAME}
-      - OLLAMA_HOST=${OLLAMA_HOST:-http://ollama:11434}
+      - OLLAMA_HOST=http://mediquery-ai-ollama:11434
     # No hard dependency on Ollama - backend will work with or without it
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -61,7 +61,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: antigravity-frontend
+    container_name: mediquery-ai-frontend
     ports:
       - "3000:80"
     depends_on:

@@ -36,8 +36,8 @@ if [ ! -f ".env" ]; then
     read -p "Press Enter to continue..."
 fi
 
-# Check if using local model
-USE_LOCAL=$(grep "USE_LOCAL_MODEL" .env | cut -d '=' -f2)
+# Check if using local model (handle inline comments)
+USE_LOCAL=$(grep "USE_LOCAL_MODEL" .env | head -n 1 | cut -d '#' -f1 | cut -d '=' -f2 | xargs)
 
 echo "Starting Docker services..."
 echo ""
@@ -45,16 +45,6 @@ echo ""
 if [ "$USE_LOCAL" = "true" ]; then
     echo "🤖 Local model mode detected - starting with Ollama..."
     docker compose --profile local-model up -d
-    
-    echo ""
-    echo "Waiting for services to start..."
-    sleep 10
-    
-    # Pull Ollama model
-    echo ""
-    echo "Pulling Qwen2.5:3b model (~2GB download)..."
-    echo "This may take a few minutes..."
-    docker exec -it mediquery-ai-ollama ollama pull qwen2.5:3b
 else
     echo "☁️  Cloud mode detected - starting without Ollama..."
     docker compose up -d

@@ -87,17 +87,17 @@ After connecting, access on your local machine:
 - **Container**: `mediquery-ai-ollama`
 - **Port**: 11434
 - **Volume**: `ollama_data` (persists models)
-- **Model**: qwen2.5:3b (2GB)
+- **Model**: qwen3:latest
 
 ### 🔧 Backend (FastAPI)
-- **Container**: `antigravity-backend`
+- **Container**: `mediquery-ai-backend`
 - **Port**: 8000
 - **Volumes**: 
   - `./backend` → `/app` (code)
   - `./backend/data` → `/app/data` (CSV files)
 
 ### 🎨 Frontend (React + Nginx)
-- **Container**: `antigravity-frontend`
+- **Container**: `mediquery-ai-frontend`
 - **Port**: 3000
 - **Built with**: Multi-stage Docker build
 
@@ -248,11 +248,14 @@ docker compose up -d
 
 ### Ollama Model Not Found
 
-```bash
-# Pull the model
-docker exec -it mediquery-ai-ollama ollama pull qwen2.5:3b
+The container will attempt to pull `qwen3:latest`, `gemma3:4b`, and `qwen2.5:3b` automatically on startup.
+If you need another model:
 
-# Check if it's installed
+```bash
+# Pull the model manually
+docker exec -it mediquery-ai-ollama ollama pull llama3:8b
+
+# Check installed models
 docker exec -it mediquery-ai-ollama ollama list
 ```
 

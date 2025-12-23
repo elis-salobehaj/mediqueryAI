@@ -139,6 +139,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/config/models")
+async def get_models():
+    """Returns the list of available LLM models."""
+    return llm_agent.get_available_models()
+
 from services.chat_history import chat_history
 
 @app.get("/health")

@@ -66,8 +66,29 @@ const CustomSelect = ({ value, onChange, options }: any) => {
 const ChatBox: React.FC<ChatBoxProps> = ({ messages, setMessages }) => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState(MODELS[0].id); // Default to Gemma 3
+  const [models, setModels] = useState<Array<{ id: string, name: string }>>([]);
+  const [selectedModel, setSelectedModel] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Fetch models on mount
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        const response = await axios.get(getApiUrl('/config/models'));
+        const availableModels = response.data;
+        setModels(availableModels);
+        if (availableModels.length > 0) {
+          setSelectedModel(availableModels[0].id);
+        }
+      } catch (error) {
+        console.error("Failed to fetch models", error);
+        // Fallback
+        setModels(MODELS);
+        setSelectedModel(MODELS[0].id);
+      }
+    };
+    fetchModels();
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -188,7 +209,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ messages, setMessages }) => {
           <CustomSelect
             value={selectedModel}
             onChange={setSelectedModel}
-            options={MODELS}
+            options={models.length > 0 ? models : MODELS}
           />
         </div>
 

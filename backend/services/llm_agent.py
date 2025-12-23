@@ -16,7 +16,7 @@ class LLMAgent:
         self.anthropic_client = None
         self.model = None
         self.use_local = os.getenv('USE_LOCAL_MODEL', 'false').lower() == 'true'
-        self.local_model = os.getenv('LOCAL_MODEL_NAME', 'qwen2.5:3b')
+        self.local_model = os.getenv('LOCAL_MODEL_NAME', 'qwen3:latest')
         self.ollama_host = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
         
         # Safety Settings - Block None for medical data analysis
@@ -46,12 +46,33 @@ class LLMAgent:
         self.model = genai.GenerativeModel('gemma-3-27b-it', safety_settings=self.safety_settings)
         logger.info("Configured Google Gemini API")
 
+    def get_available_models(self) -> list:
+        """Returns a list of available models based on configuration."""
+        if self.use_local:
+            return [
+                {"id": "qwen3:latest", "name": "Qwen 3 (7B) - DEFAULT"},
+                {"id": "gemma3:4b", "name": "Gemma 3 (4B)"},
+                {"id": "qwen2.5:3b", "name": "Qwen 2.5 (3B)"},
+            ]
+        else:
+            return [
+                {"id": "gemma-3-27b-it", "name": "GEMMA 3 27B (DEFAULT / HIGH QUOTA)"},
+                {"id": "gemini-2.5-flash-lite", "name": "GEMINI 2.5 FLASH LITE"},
+                {"id": "claude-3-5-sonnet-20241022", "name": "CLAUDE 3.5 SONNET (ANTHROPIC)"},
+            ]
+
     def set_model(self, model_id: str):
         """Switches the active model."""
         if self.use_local:
-            logger.warning(f"Local mode enabled - ignoring model switch to {model_id}")
+            # Allow switching local models if they are in the supported list
+            supported_local = [m['id'] for m in self.get_available_models()]
+            if model_id in supported_local:
+                self.local_model = model_id
+                logger.info(f"Switched local model to: {model_id}")
+            else:
+                logger.warning(f"Attempted to switch to unsupported local model: {model_id}. Keeping {self.local_model}")
             return
-            
+
         # Handle Anthropic Models
         if 'claude' in model_id:
             if not self.anthropic_client:
