@@ -28,6 +28,8 @@ jobs:
       - name: Build Test Containers
         run: |
           docker buildx bake -f docker-compose.test.yml \
+            --allow=fs.read=/tmp \
+            --allow=fs.write=/tmp \
             --set "*.cache-from=type=local,src=/tmp/.buildx-cache" \
             --set "*.cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max" \
             --load
