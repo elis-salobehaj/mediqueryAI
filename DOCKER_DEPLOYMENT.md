@@ -41,8 +41,8 @@ docker compose ps
 ### 4. Pull Ollama Model (First Time Only)
 
 ```bash
-# Pull the Qwen2.5 model (~2GB)
-docker exec -it mediquery-ai-ollama ollama pull qwen2.5:3b
+# Pull the Qwen2.5 Coder model (~4.7GB)
+docker exec -it mediquery-ai-ollama ollama pull qwen2.5-coder:7b
 
 # Verify model is installed
 docker exec -it mediquery-ai-ollama ollama list
@@ -87,7 +87,7 @@ After connecting, access on your local machine:
 - **Container**: `mediquery-ai-ollama`
 - **Port**: 11434
 - **Volume**: `ollama_data` (persists models)
-- **Model**: qwen3:latest
+- **Model**: qwen2.5-coder:7b
 
 ### 🔧 Backend (FastAPI)
 - **Container**: `mediquery-ai-backend`
@@ -181,7 +181,7 @@ CHAT_HISTORY_RETENTION_HOURS=24
 
 # Local model settings
 USE_LOCAL_MODEL=true
-LOCAL_MODEL_NAME=qwen2.5:3b
+LOCAL_MODEL_NAME=qwen2.5-coder:7b
 ```
 
 ### Switch Between Local and Cloud
@@ -248,7 +248,7 @@ docker compose up -d
 
 ### Ollama Model Not Found
 
-The container will attempt to pull `qwen3:latest`, `gemma3:4b`, and `qwen2.5:3b` automatically on startup.
+The container will attempt to pull `qwen3:latest`, `qwen2.5-coder:7b`, `sqlcoder:7b`, and `llama3.1` automatically on startup.
 If you need another model:
 
 ```bash

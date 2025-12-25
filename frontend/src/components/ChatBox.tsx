@@ -14,9 +14,9 @@ interface ChatBoxProps {
 }
 
 const MODELS = [
-  { id: 'gemma-3-27b-it', name: 'GEMMA 3 27B (DEFAULT / HIGH QUOTA)' },
-  { id: 'gemini-2.5-flash-lite', name: 'GEMINI 2.5 FLASH LITE' },
-  { id: 'claude-3-5-sonnet-20241022', name: 'CLAUDE 3.5 SONNET (ANTHROPIC)' },
+  { id: 'qwen2.5-coder:7b', name: 'Qwen 2.5 Coder (7B)' },
+  { id: 'sqlcoder:7b', name: 'Defog SQLCoder (7B)' },
+  { id: 'gemma-3-27b-it', name: 'GEMMA 3 27B (CLOUD)' },
 ];
 
 /* Custom Futuristic Dropdown Component */

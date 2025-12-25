@@ -13,7 +13,7 @@ done
 echo "Ollama service started."
 
 # Array of models to pull
-models=("qwen3:latest" "gemma3:4b" "qwen2.5:3b")
+models=("qwen3:latest" "qwen2.5-coder:7b" "sqlcoder:7b" "llama3.1")
 
 for model in "${models[@]}"; do
     if ollama list | grep -q "$model"; then
