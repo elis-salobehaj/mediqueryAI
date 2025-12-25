@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/elis-salobehaj/mediqueryAI/compare/frontend-v1.1.0...frontend-v1.2.0) (2025-12-25)
+
+
+### Features
+
+* Explainable AI and Visualization Enhancements ([#4](https://github.com/elis-salobehaj/mediqueryAI/issues/4)) ([df58412](https://github.com/elis-salobehaj/mediqueryAI/commit/df5841231a537dc70ac62a2d3e3f5f36ec381d6c))
+
 ## [1.1.0](https://github.com/elis-salobehaj/mediqueryAI/compare/frontend-v1.0.0...frontend-v1.1.0) (2025-12-25)
 
 
