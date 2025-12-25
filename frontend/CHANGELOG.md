@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/elis-salobehaj/mediqueryAI/compare/frontend-v1.2.0...frontend-v1.3.0) (2025-12-25)
+
+
+### Features
+
+* Enhanced SQL Agent, Visualization Fixes & Optimized CI/CD ([#6](https://github.com/elis-salobehaj/mediqueryAI/issues/6)) ([d9150f0](https://github.com/elis-salobehaj/mediqueryAI/commit/d9150f00cab9123c943dee50c2151be85247a809))
+
 ## [1.2.0](https://github.com/elis-salobehaj/mediqueryAI/compare/frontend-v1.1.0...frontend-v1.2.0) (2025-12-25)
 
 
