@@ -18,6 +18,7 @@ class LLMAgent:
         self.use_local = os.getenv('USE_LOCAL_MODEL', 'false').lower() == 'true'
         self.local_model = os.getenv('LOCAL_MODEL_NAME', 'qwen3:latest')
         self.ollama_host = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
+        self.last_thoughts = []
         
         # Safety Settings - Block None for medical data analysis
         self.safety_settings = {
@@ -142,6 +143,13 @@ class LLMAgent:
             history_str = "\n".join([f"{msg['role']}: {msg['text']}" for msg in relevant_history])
             history_context = f"Chat History:\n{history_str}\n\n"
 
+        # Reset thoughts for this new query
+        self.last_thoughts = []
+        self.last_thoughts.append(f"Analyzing user request: '{user_query}'")
+        self.last_thoughts.append("Retrieving database schema...")
+        # Simulate table retrieval (since we pass full schema currently)
+        self.last_thoughts.append(f"Context loaded: Full Schema ({len(schema_str)} chars)")
+        
         prompt = f"""
 You are an expert SQLite developer. Convert the following natural language request into a valid SQL query.
 The database has the following schema:
@@ -173,6 +181,8 @@ Rules:
 User Request: {user_query}
 """
         logger.debug(f"Generating SQL with model: {self.model}")
+        self.last_thoughts.append(f"Selected Model: {self.local_model if self.use_local else 'Cloud API'}")
+        self.last_thoughts.append("Generating SQL query...")
         try:
             if self.use_local:
                 sql = self._call_ollama(prompt)
@@ -196,6 +206,7 @@ User Request: {user_query}
                 sql = sql.strip("`").replace("sql", "").strip()
             
             logger.debug(f"Cleaned SQL: {sql}")
+            self.last_thoughts.append(f"Generated SQL: {sql}")
             return sql
         except exceptions.ResourceExhausted:
             logger.warning("Google API Rate Limit Exceeded")
