@@ -2,7 +2,7 @@ services:
   backend-test:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.test_lite
     volumes:
       - ./backend:/app
     environment:

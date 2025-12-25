@@ -1,0 +1,19 @@
+fastapi
+uvicorn
+python-dotenv
+google-genai
+google-api-core
+pandas
+ollama
+anthropic>=0.25.0
+python-jose[cryptography]
+argon2-cffi
+python-multipart
+authlib
+pytest
+httpx
+sqlalchemy
+# Heavy libraries excluded (mocked in conftest.py):
+# llama-index
+# llama-index-llms-ollama
+# llama-index-embeddings-huggingface
