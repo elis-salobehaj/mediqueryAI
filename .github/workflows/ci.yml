@@ -27,7 +27,15 @@ jobs:
 
       - name: Build Test Containers
         run: |
-          docker compose -f docker-compose.test.yml build
+          docker buildx bake -f docker-compose.test.yml \
+            --set "*.cache-from=type=local,src=/tmp/.buildx-cache" \
+            --set "*.cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max" \
+            --load
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
       - name: Run Backend Tests
         env:
