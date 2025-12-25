@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/playwright:v1.50.0-jammy
+FROM mcr.microsoft.com/playwright:v1.57.0-jammy
 
 WORKDIR /app
 
@@ -6,8 +6,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# 2. Browsers are pre-installed in the base image (v1.50 matches package.json)
-# We skip 'npx playwright install' to save time & bandwidth!
+# 2. Browsers are pre-installed in the base image (v1.57 matches package.json)
+# We can safely skip 'npx playwright install'
 
 # 3. Copy source code (Frequent changes layer)
 COPY . .
