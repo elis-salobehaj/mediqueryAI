@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/elis-salobehaj/mediqueryAI/compare/frontend-v1.0.0...frontend-v1.1.0) (2025-12-25)
+
+
+### Features
+
+* integrate qwen2.5-coder and sqlcoder models ([#2](https://github.com/elis-salobehaj/mediqueryAI/issues/2)) ([afceb20](https://github.com/elis-salobehaj/mediqueryAI/commit/afceb2017d43252d18c9be61ed8456f000972b11))
+
 ## 1.0.0 (2025-12-23)
 
 
