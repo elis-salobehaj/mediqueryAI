@@ -1,4 +1,5 @@
 import sqlite3
+import json
 import pandas as pd
 import os
 import logging
@@ -14,7 +15,9 @@ class DatabaseService:
         else:
             self.data_dir = data_dir
             
-        self.conn = sqlite3.connect(":memory:", check_same_thread=False)
+        # Use file-based DB to allow sharing with LlamaIndex/SQLAlchemy
+        db_path = os.path.join(base_dir, "medical.db")
+        self.conn = sqlite3.connect(db_path, check_same_thread=False)
         self.cursor = self.conn.cursor()
         self._load_data()
 
@@ -37,15 +40,40 @@ class DatabaseService:
                 logger.error(f"Failed to load {csv_file}: {e}")
 
     def get_schema(self) -> str:
-        """Returns a string representation of the database schema for the LLM."""
+        """Returns a string representation of the database schema for the LLM, enriched with semantic metadata."""
         schema_str = []
+        
+        # Load semantic metadata if available
+        meta_path = os.path.join(self.data_dir, "semantic_metadata.json")
+        metadata = {}
+        if os.path.exists(meta_path):
+            try:
+                with open(meta_path, 'r') as f:
+                    meta_list = json.load(f)
+                    for item in meta_list:
+                        metadata[item['table_name']] = item
+            except Exception as e:
+                logger.error(f"Failed to load semantic metadata: {e}")
+
         self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         tables = [row[0] for row in self.cursor.fetchall()]
         
         for table in tables:
+            table_desc = ""
+            col_meta = {}
+            if table in metadata:
+                table_desc = f" - {metadata[table].get('description', '')}"
+                col_meta = metadata[table].get('columns', {})
+
             self.cursor.execute(f"PRAGMA table_info({table})")
-            columns = [f"{row[1]} ({row[2]})" for row in self.cursor.fetchall()]
-            schema_str.append(f"Table: {table}\nColumns: {', '.join(columns)}")
+            columns = []
+            for row in self.cursor.fetchall():
+                col_name = row[1]
+                col_type = row[2]
+                desc = f" - {col_meta.get(col_name, '')}" if col_name in col_meta else ""
+                columns.append(f"{col_name} ({col_type}){desc}")
+            
+            schema_str.append(f"Table: {table}{table_desc}\nColumns: {', '.join(columns)}")
         
         return "\n\n".join(schema_str)
 

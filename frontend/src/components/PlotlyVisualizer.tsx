@@ -25,12 +25,17 @@ const getCompatibleChartTypes = (columns: string[], rows: any[], rowCount: numbe
   const numericCols = columns.filter(isNumeric);
   const categoricalCols = columns.filter(col => !isNumeric(col));
 
+  // Heuristic: Is this a "Metric" (Count/Amount) or "Dimension" (Age/Year)?
+  // If we only have "Dimension" style numbers, we might prefer charts that can handle Counts (like Bar/Pie) 
+  // explicitly over those that require 3+ numbers.
+
   // Basic charts (need at least 2 columns)
   if (columns.length >= 2) {
     compatible.push('bar', 'scatter', 'area');
 
     // Pie/donut for categorical + numeric
-    if (categoricalCols.length >= 1 && numericCols.length >= 1) {
+    // OR just categorical (we can count)
+    if (categoricalCols.length >= 1) {
       compatible.push('pie', 'donut');
     }
   }
@@ -80,6 +85,34 @@ const getCompatibleChartTypes = (columns: string[], rows: any[], rowCount: numbe
   }
 
   return compatible;
+};
+
+// Utils for smart column selection
+const METRIC_KEYWORDS = ['count', 'total', 'sum', 'amount', 'revenue', 'profit', 'sales', 'val', 'cost', 'bill', 'avg', 'average', 'score', 'rating', 'rate', 'percent', 'min', 'max'];
+const DIMENSION_KEYWORDS = ['age', 'year', 'month', 'day', 'id', 'zip', 'code', 'lat', 'lon'];
+
+const isMetricColumn = (colName: string) => METRIC_KEYWORDS.some(kw => colName.toLowerCase().includes(kw));
+const isDimensionColumn = (colName: string) => DIMENSION_KEYWORDS.some(kw => colName.toLowerCase().includes(kw));
+
+const getBestValueColumn = (columns: string[], rows: any[]): string | null => {
+  const numericCols = columns.filter(col => typeof rows[0][col] === 'number');
+  if (numericCols.length === 0) return null;
+
+  // 1. Prefer explicit metrics
+  const explicitMetric = numericCols.find(isMetricColumn);
+  if (explicitMetric) return explicitMetric;
+
+  // 2. Avoid dimensions if possible
+  const nonDimension = numericCols.find(col => !isDimensionColumn(col));
+  if (nonDimension) return nonDimension;
+
+  // 3. Fallback (but logic should handle "null" implies "Count rows")
+  return numericCols[0];
+};
+
+const shouldUseRowCount = (valueCol: string | null): boolean => {
+  if (!valueCol) return true;
+  return isDimensionColumn(valueCol) && !isMetricColumn(valueCol);
 };
 
 
@@ -134,6 +167,33 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
       case 'bar': {
         const xCol = columns[0];
         const yCol = columns[1];
+
+        // Smart Value Detection
+        const bestValueCol = getBestValueColumn(columns, rows);
+        const useCount = shouldUseRowCount(bestValueCol);
+
+        // Aggregate if X is not unique implies grouping needed
+        const uniqueX = new Set(getColumn(xCol));
+
+        if (uniqueX.size < rows.length) {
+          const aggMap = new Map<string, number>();
+          rows.forEach((row: any) => {
+            const key = String(row[xCol]);
+            const val = useCount ? 1 : (Number(row[bestValueCol!]) || 0);
+            aggMap.set(key, (aggMap.get(key) || 0) + val);
+          });
+
+          return {
+            plotData: [{
+              type: 'bar',
+              x: Array.from(aggMap.keys()),
+              y: Array.from(aggMap.values()),
+              marker: { color: '#00F0FF', line: { color: '#00F0FF', width: 1 } }
+            }],
+            layout: { ...baseLayout, title: `Bar Chart (${useCount ? 'Count' : bestValueCol})`, xaxis: { ...baseLayout.xaxis, title: xCol }, yaxis: { ...baseLayout.yaxis, title: useCount ? 'Count' : bestValueCol } }
+          };
+        }
+
         return {
           plotData: [{
             type: 'bar',
@@ -145,34 +205,34 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
         };
       }
 
-      case 'pie': {
-        const labelCol = columns[0];
-        const valueCol = columns[1];
-        return {
-          plotData: [{
-            type: 'pie',
-            labels: getColumn(labelCol),
-            values: getColumn(valueCol),
-            marker: { colors: ['#00F0FF', '#FF0055', '#00FF88', '#FFD700', '#FF6B6B', '#4ECDC4'] },
-            textfont: { color: '#000' }
-          }],
-          layout: { ...baseLayout, title: 'Pie Chart' }
-        };
-      }
-
+      case 'pie':
       case 'donut': {
         const labelCol = columns[0];
-        const valueCol = columns[1];
+        const bestValueCol = getBestValueColumn(columns, rows);
+        const useCount = shouldUseRowCount(bestValueCol);
+
+        const aggMap = new Map<string, number>();
+        rows.forEach((row: any) => {
+          const key = String(row[labelCol]);
+          const val = useCount ? 1 : (Number(row[bestValueCol!]) || 0);
+          aggMap.set(key, (aggMap.get(key) || 0) + val);
+        });
+
+        const labels = Array.from(aggMap.keys());
+        const values = Array.from(aggMap.values());
+
         return {
           plotData: [{
             type: 'pie',
-            labels: getColumn(labelCol),
-            values: getColumn(valueCol),
-            hole: 0.4,
+            labels: labels,
+            values: values,
+            hole: selectedChartType === 'donut' ? 0.4 : 0,
             marker: { colors: ['#00F0FF', '#FF0055', '#00FF88', '#FFD700', '#FF6B6B', '#4ECDC4'] },
-            textfont: { color: '#000' }
+            textfont: { color: '#000' },
+            textinfo: 'label+percent',
+            hoverinfo: 'label+value+percent'
           }],
-          layout: { ...baseLayout, title: 'Donut Chart' }
+          layout: { ...baseLayout, title: `${selectedChartType === 'donut' ? 'Donut' : 'Pie'} Chart (${useCount ? 'Count' : bestValueCol})` }
         };
       }
 
@@ -263,13 +323,11 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
       }
 
       case 'heatmap': {
-        // Assume all numeric columns for correlation matrix
         const numericCols = columns.filter((col: string) => typeof rows[0][col] === 'number');
         const matrix = numericCols.map((col1: string) =>
           numericCols.map((col2: string) => {
             const data1 = getColumn(col1);
             const data2 = getColumn(col2);
-            // Simple correlation calculation
             const mean1 = data1.reduce((a: number, b: number) => a + b, 0) / data1.length;
             const mean2 = data2.reduce((a: number, b: number) => a + b, 0) / data2.length;
             const num = data1.reduce((sum: number, val: number, i: number) => sum + (val - mean1) * (data2[i] - mean2), 0);
@@ -394,22 +452,21 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
 
       // ===== HIERARCHICAL CHARTS =====
       case 'sunburst': {
-        // Build hierarchical structure from flat data
-        // If we have 2+ categorical columns, create parent-child relationships
         const categoricalCols = columns.filter(col => typeof rows[0][col] === 'string');
-        const numericCol = columns.find(col => typeof rows[0][col] === 'number') || columns[columns.length - 1];
+        const bestValueCol = getBestValueColumn(columns, rows);
+        const useCount = shouldUseRowCount(bestValueCol);
+
+        const getValue = (row: any) => useCount ? 1 : (Number(row[bestValueCol!]) || 1);
 
         if (categoricalCols.length >= 2) {
-          // Multi-level hierarchy
-          const labels: string[] = ['Total']; // Root node
+          const labels: string[] = ['Total'];
           const parents: string[] = [''];
-          const values: number[] = [rows.reduce((sum, row) => sum + (Number(row[numericCol]) || 1), 0)];
+          const values: number[] = [rows.reduce((sum, row) => sum + getValue(row), 0)];
 
-          // Level 1: First categorical column
           const level1Map = new Map<string, number>();
           rows.forEach(row => {
             const key = String(row[categoricalCols[0]]);
-            level1Map.set(key, (level1Map.get(key) || 0) + (Number(row[numericCol]) || 1));
+            level1Map.set(key, (level1Map.get(key) || 0) + getValue(row));
           });
 
           level1Map.forEach((value, key) => {
@@ -418,13 +475,11 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             values.push(value);
           });
 
-          // Level 2: Second categorical column
           rows.forEach(row => {
             const parent = String(row[categoricalCols[0]]);
             const child = String(row[categoricalCols[1]]);
             const label = `${parent} - ${child}`;
-            const value = Number(row[numericCol]) || 1;
-
+            const value = getValue(row);
             if (!labels.includes(label)) {
               labels.push(label);
               parents.push(parent);
@@ -442,42 +497,40 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
               textfont: { color: '#000' },
               branchvalues: 'total'
             }],
-            layout: { ...baseLayout, title: 'Sunburst Chart' }
+            layout: { ...baseLayout, title: `Sunburst Chart (${useCount ? 'Count' : bestValueCol})` }
           };
         } else {
-          // Single level - just use first column as categories
           const labelCol = categoricalCols[0] || columns[0];
-          const valueCol = numericCol;
           return {
             plotData: [{
               type: 'sunburst',
               labels: getColumn(labelCol),
               parents: Array(rows.length).fill(''),
-              values: getColumn(valueCol),
+              values: rows.map(getValue),
               marker: { colors: ['#00F0FF', '#FF0055', '#00FF88', '#FFD700', '#FF6B6B', '#4ECDC4'] },
               textfont: { color: '#000' }
             }],
-            layout: { ...baseLayout, title: 'Sunburst Chart' }
+            layout: { ...baseLayout, title: `Sunburst Chart (${useCount ? 'Count' : bestValueCol})` }
           };
         }
       }
 
       case 'treemap': {
-        // Build hierarchical structure from flat data
         const categoricalCols = columns.filter(col => typeof rows[0][col] === 'string');
-        const numericCol = columns.find(col => typeof rows[0][col] === 'number') || columns[columns.length - 1];
+        const bestValueCol = getBestValueColumn(columns, rows);
+        const useCount = shouldUseRowCount(bestValueCol);
+
+        const getValue = (row: any) => useCount ? 1 : (Number(row[bestValueCol!]) || 1);
 
         if (categoricalCols.length >= 2) {
-          // Multi-level hierarchy
           const labels: string[] = ['Total'];
           const parents: string[] = [''];
-          const values: number[] = [rows.reduce((sum, row) => sum + (Number(row[numericCol]) || 1), 0)];
+          const values: number[] = [rows.reduce((sum, row) => sum + getValue(row), 0)];
 
-          // Level 1
           const level1Map = new Map<string, number>();
           rows.forEach(row => {
             const key = String(row[categoricalCols[0]]);
-            level1Map.set(key, (level1Map.get(key) || 0) + (Number(row[numericCol]) || 1));
+            level1Map.set(key, (level1Map.get(key) || 0) + getValue(row));
           });
 
           level1Map.forEach((value, key) => {
@@ -486,13 +539,11 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             values.push(value);
           });
 
-          // Level 2
           rows.forEach(row => {
             const parent = String(row[categoricalCols[0]]);
             const child = String(row[categoricalCols[1]]);
             const label = `${parent} - ${child}`;
-            const value = Number(row[numericCol]) || 1;
-
+            const value = getValue(row);
             if (!labels.includes(label)) {
               labels.push(label);
               parents.push(parent);
@@ -510,28 +561,25 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
               textfont: { color: '#000' },
               branchvalues: 'total'
             }],
-            layout: { ...baseLayout, title: 'Treemap' }
+            layout: { ...baseLayout, title: `Treemap (${useCount ? 'Count' : bestValueCol})` }
           };
         } else {
-          // Single level
           const labelCol = categoricalCols[0] || columns[0];
-          const valueCol = numericCol;
           return {
             plotData: [{
               type: 'treemap',
               labels: getColumn(labelCol),
               parents: Array(rows.length).fill(''),
-              values: getColumn(valueCol),
+              values: rows.map(getValue),
               marker: { colors: ['#00F0FF', '#FF0055', '#00FF88', '#FFD700', '#FF6B6B', '#4ECDC4'] },
               textfont: { color: '#000' }
             }],
-            layout: { ...baseLayout, title: 'Treemap' }
+            layout: { ...baseLayout, title: `Treemap (${useCount ? 'Count' : bestValueCol})` }
           };
         }
       }
 
       case 'sankey': {
-        // Simplified Sankey - requires source, target, value
         const sourceCol = columns[0];
         const targetCol = columns[1];
         const valueCol = columns[2] || columns[1];
@@ -558,43 +606,78 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
 
       // ===== SPECIALIZED CHARTS =====
       case 'indicator': {
-        const valueCol = columns.find((col: string) => typeof rows[0][col] === 'number') || columns[0];
-        const value = getColumn(valueCol).reduce((a: number, b: number) => a + b, 0);
+        const bestValueCol = getBestValueColumn(columns, rows);
+        const useCount = shouldUseRowCount(bestValueCol);
+
+        // Helper to check if we should average or sum
+        const IS_AVG_KEYWORD = ['avg', 'average', 'rate', 'percent', 'score', 'min', 'max', 'mean', 'median'];
+        const shouldAverage = bestValueCol && IS_AVG_KEYWORD.some(kw => bestValueCol.toLowerCase().includes(kw));
+
+        let value = 0;
+        let prefix = "";
+
+        if (useCount) {
+          value = rows.length;
+          prefix = "Total Count";
+        } else {
+          // Calculate Sum first
+          const sum = rows.reduce((a: number, r: any) => a + (Number(r[bestValueCol!]) || 0), 0);
+
+          if (shouldAverage && rows.length > 0) {
+            value = sum / rows.length;
+            prefix = `Avg ${bestValueCol}`;
+          } else {
+            value = sum;
+            prefix = `Total ${bestValueCol}`;
+          }
+        }
+
         return {
           plotData: [{
             type: 'indicator',
-            mode: 'number+delta',
+            mode: 'number',
             value: value,
-            delta: { reference: value * 0.9 },
             domain: { x: [0, 1], y: [0, 1] },
-            title: { text: valueCol, font: { color: '#00F0FF' } },
-            number: { font: { color: '#00F0FF', size: 60 } }
+            title: { text: prefix, font: { color: '#00F0FF' } },
+            number: { font: { color: '#00F0FF', size: 60 }, valueformat: shouldAverage ? ".1f" : "d" }
           }],
           layout: { ...baseLayout, title: 'KPI Indicator' }
         };
       }
 
       case 'gauge': {
-        const valueCol = columns.find((col: string) => typeof rows[0][col] === 'number') || columns[0];
-        const values = getColumn(valueCol);
-        const avgValue = values.reduce((a: number, b: number) => a + b, 0) / values.length;
+        const bestValueCol = getBestValueColumn(columns, rows);
+        const useCount = shouldUseRowCount(bestValueCol);
+
+        let value = 0;
+        let axisRange = 100;
+
+        if (useCount) {
+          value = rows.length;
+          axisRange = value * 1.5;
+        } else {
+          const values = getColumn(bestValueCol!);
+          value = values.reduce((a: number, b: number) => a + b, 0) / values.length;
+          axisRange = Math.max(...values);
+        }
+
         return {
           plotData: [{
             type: 'indicator',
             mode: 'gauge+number',
-            value: avgValue,
+            value: value,
             gauge: {
-              axis: { range: [null, Math.max(...values)], tickcolor: '#00F0FF' },
+              axis: { range: [null, axisRange], tickcolor: '#00F0FF' },
               bar: { color: '#00F0FF' },
               bgcolor: 'rgba(2, 4, 8, 0.5)',
               borderwidth: 2,
               bordercolor: '#00F0FF',
               steps: [
-                { range: [0, Math.max(...values) * 0.5], color: 'rgba(0, 240, 255, 0.2)' },
-                { range: [Math.max(...values) * 0.5, Math.max(...values)], color: 'rgba(0, 240, 255, 0.4)' }
+                { range: [0, axisRange * 0.5], color: 'rgba(0, 240, 255, 0.2)' },
+                { range: [axisRange * 0.5, axisRange], color: 'rgba(0, 240, 255, 0.4)' }
               ]
             },
-            title: { text: valueCol, font: { color: '#00F0FF' } }
+            title: { text: useCount ? 'Count' : `Avg ${bestValueCol}`, font: { color: '#00F0FF' } }
           }],
           layout: { ...baseLayout, title: 'Gauge Chart' }
         };
@@ -636,20 +719,32 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
       case 'choropleth':
       case 'map': {
         const locationCol = columns.find((col: string) => col.toLowerCase().includes('state')) || columns[0];
-        const valueCol = columns[1];
+        const bestValueCol = getBestValueColumn(columns, rows);
+        const useCount = shouldUseRowCount(bestValueCol);
+
+        const stateMap = new Map<string, number>();
+        rows.forEach((row: any) => {
+          const loc = row[locationCol];
+          const val = useCount ? 1 : (Number(row[bestValueCol!]) || 0);
+          stateMap.set(loc, (stateMap.get(loc) || 0) + val);
+        });
+
+        const locations = Array.from(stateMap.keys());
+        const z = Array.from(stateMap.values());
+
         return {
           plotData: [{
             type: 'choropleth',
             locationmode: 'USA-states',
-            locations: getColumn(locationCol),
-            z: getColumn(valueCol),
+            locations: locations,
+            z: z,
             colorscale: [[0, '#020408'], [0.5, '#00F0FF'], [1, '#FF0055']],
-            colorbar: { title: valueCol, tickfont: { color: '#E0F7FA' } },
+            colorbar: { title: useCount ? 'Count' : bestValueCol, tickfont: { color: '#E0F7FA' } },
             marker: { line: { color: '#00F0FF', width: 1 } }
           }],
           layout: {
             ...baseLayout,
-            title: 'USA Choropleth Map',
+            title: `USA Choropleth Map (${useCount ? 'Patient Count' : bestValueCol})`,
             geo: {
               scope: 'usa',
               projection: { type: 'albers usa' },
@@ -663,18 +758,33 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
 
       case 'scattergeo': {
         const locationCol = columns.find((col: string) => col.toLowerCase().includes('state')) || columns[0];
-        const valueCol = columns[1];
+        const bestValueCol = getBestValueColumn(columns, rows);
+        const useCount = shouldUseRowCount(bestValueCol);
+
+        const stateMap = new Map<string, number>();
+        rows.forEach((row: any) => {
+          const loc = row[locationCol];
+          const val = useCount ? 1 : (Number(row[bestValueCol!]) || 0);
+          stateMap.set(loc, (stateMap.get(loc) || 0) + val);
+        });
+
+        const locations = Array.from(stateMap.keys());
+        const sizes = Array.from(stateMap.values());
+
+        const maxSize = Math.max(...sizes);
+        const markerSizes = sizes.map(s => (s / maxSize) * 30 + 5);
+
         return {
           plotData: [{
             type: 'scattergeo',
             locationmode: 'USA-states',
-            locations: getColumn(locationCol),
-            text: getColumn(valueCol).map((v: any, i: number) => `${getColumn(locationCol)[i]}: ${v}`),
-            marker: { size: getColumn(valueCol), color: '#00F0FF', line: { color: '#fff', width: 1 } }
+            locations: locations,
+            text: sizes.map((v, i) => `${locations[i]}: ${v}`),
+            marker: { size: markerSizes, color: '#00F0FF', line: { color: '#fff', width: 1 } }
           }],
           layout: {
             ...baseLayout,
-            title: 'Scatter Geo Map',
+            title: `Scatter Geo Map (${useCount ? 'Patient Count' : bestValueCol})`,
             geo: {
               scope: 'usa',
               projection: { type: 'albers usa' },
