@@ -280,3 +280,7 @@ body {
       100% calc(100% - 10px), calc(100% - 10px) 100%,
       0 100%, 0 10px);
 }
+
+.ambient-glow {
+  @apply absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#00F0FF] opacity-[0.05] blur-[100px] pointer-events-none rounded-full;
+}

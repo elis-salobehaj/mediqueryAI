@@ -21,7 +21,7 @@ chmod +x docker-start.sh
 ```
 
 This will:
-- ✅ Start Ollama (local LLM - qwen3:latest)
+- ✅ Start Ollama (local LLM - qwen2.5-coder:7b)
 - ✅ Start FastAPI backend
 - ✅ Start React frontend with Nginx
 - ✅ Pull the AI model (~2GB)
@@ -65,6 +65,21 @@ This will:
 - 🔄 **Smart Visualization Selection**: AI-powered chart type recommendation based on data structure
 - 🎯 **Hybrid LLM Support**: Local models (Ollama) or Cloud (Google Gemini)
 - 🐳 **Docker Ready**: One-command deployment with Docker Compose
+- 🧩 **Smart Schema Inference**: Auto-detects demographics vs. illness queries to optimize SQL joins (e.g. searching both 'chronic_conditions' and 'diagnosis' for ambiguous medical terms)
+
+## 🧪 Testing
+
+We provide automated scripts to run the full Test Suite (Backend Pytest + Frontend Playwright) in isolated Docker containers:
+
+```powershell
+# Windows
+.\run-tests.ps1
+
+# Linux / Mac
+./run-tests.sh
+```
+
+See [TESTING_GUIDE.md](TESTING_GUIDE.md) for detailed scenarios.
 
 ## ✨ Visual Insights
 
@@ -91,7 +106,7 @@ This will:
 
 ### Infrastructure
 - **Docker & Docker Compose** for containerization
-- **Ollama** for local LLM inference (Qwen2.5:3b)
+- **Ollama** for local LLM inference (qwen2.5-coder:7b)
 
 ---
 
@@ -105,9 +120,6 @@ cp .env.docker .env
 
 # Start all services
 docker-compose up -d
-
-# Pull Ollama model
-docker exec -it mediquery-ai-ollama ollama pull qwen2.5:3b
 
 # Access the application
 # Frontend: http://localhost:3000
@@ -145,7 +157,7 @@ CHAT_HISTORY_RETENTION_HOURS=24
 
 # Local Model Configuration (Ollama)
 USE_LOCAL_MODEL=true              # true = local, false = cloud
-LOCAL_MODEL_NAME=qwen2.5:3b       # Ollama model
+LOCAL_MODEL_NAME=qwen2.5-coder:7b       # Ollama model
 OLLAMA_HOST=http://localhost:11434
 ```
 
@@ -208,20 +220,20 @@ Ollama is automatically included in the Docker setup - no separate installation 
 **Windows:**
 ```powershell
 winget install Ollama.Ollama
-ollama pull qwen2.5:3b
+ollama pull qwen2.5-coder:7b
 ```
 
 **Ubuntu/Linux:**
 ```bash
 curl -fsSL https://ollama.com/install.sh | sh
-ollama pull qwen2.5:3b
+ollama pull qwen2.5-coder:7b
 ```
 
 **Configure:**
 ```bash
 # In backend/.env
 USE_LOCAL_MODEL=true
-LOCAL_MODEL_NAME=qwen2.5:3b
+LOCAL_MODEL_NAME=qwen2.5-coder:7b
 ```
 
 **Full guide:** [backend/docs/LOCAL_MODEL_SETUP.md](backend/docs/LOCAL_MODEL_SETUP.md)
@@ -279,7 +291,7 @@ The system intelligently selects from **60+ Plotly.js chart types**:
 
 **Ollama model not found:**
 ```bash
-docker exec -it mediquery-ai-ollama ollama pull qwen2.5:3b
+docker exec -it mediquery-ai-ollama ollama pull qwen2.5-coder:7b
 ```
 
 **Backend can't connect to Ollama:**
@@ -352,7 +364,7 @@ Edit `frontend/src/components/PlotlyVisualizer.tsx`:
 
 ## Security Notes
 
-⚠️ **This is a POC/Demo Application**
+⚠️ **This is a Demo Application**
 
 For production use:
 - Implement proper authentication

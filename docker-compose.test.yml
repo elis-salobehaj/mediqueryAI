@@ -1,0 +1,26 @@
+services:
+  backend-test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.test_lite
+    volumes:
+      - ./backend:/app
+    environment:
+      - USE_LOCAL_MODEL=true
+      # Add dummy keys if tests require them and don't mock them
+      - GEMINI_API_KEY=test
+      - ANTHROPIC_API_KEY=test
+    command: python -m pytest -v
+
+  frontend-test-ct:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.test
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      # Do NOT mount full . to avoid overwriting node_modules
+    environment:
+      - CI=true
+    # Command is now inherited from Dockerfile (CMD) or overridden here
+    command: npm run test-ct

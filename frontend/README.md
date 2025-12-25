@@ -63,3 +63,11 @@ npm run test-ct
 # Run E2E Tests
 npm run test-e2e
 ```
+
+### Dockerized Testing (Recommended)
+We use a custom `Dockerfile.test` (with cached browsers) to run tests in a consistent environment similar to CI.
+
+```powershell
+# Run via root script
+..\run-tests.ps1
+```

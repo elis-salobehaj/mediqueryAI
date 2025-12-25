@@ -137,7 +137,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ messages, setMessages }) => {
   return (
     <div className="flex flex-col h-0 flex-1 w-full max-w-6xl mx-auto p-4 md:p-6 gap-6 z-10 relative overflow-hidden">
       {/* HUD Message Stream */}
-      <div style={{ height: '60vh', overflowY: 'auto' }} className="space-y-6 pr-2 scroll-smooth relative pb-10 z-10">
+      <div className="flex-1 min-h-0 space-y-6 pr-2 scroll-smooth relative pb-10 z-10 overflow-y-auto custom-scrollbar">
         {messages.map((msg) => (
           <div key={msg.id} className={clsx("flex gap-4 group", msg.sender === 'user' ? "flex-row-reverse" : "flex-row")}>
 
@@ -152,12 +152,23 @@ const ChatBox: React.FC<ChatBoxProps> = ({ messages, setMessages }) => {
             <div className={clsx(
               "max-w-[85%] relative p-6 border transition-all duration-300 backdrop-blur-md",
               msg.sender === 'user'
-                ? "bg-[#00F0FF]/5 border-[#00F0FF] text-white rounded-bl-2xl rounded-tr-2xl"
+                ? "bg-[#00F0FF]/5 border-[#00F0FF]/30 text-white rounded-bl-2xl rounded-tr-2xl shadow-[0_0_20px_rgba(0,240,255,0.05)]"
                 : "bg-[#020408]/80 border-[#00F0FF]/30 text-[#E0F7FA] rounded-br-2xl rounded-tl-2xl shadow-[0_0_20px_rgba(0,240,255,0.05)]"
             )}>
               {/* Tiny deco bits */}
-              <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-[#00F0FF]"></div>
-              <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-[#00F0FF]"></div>
+              {/* Tiny deco bits - Adjusted to sit on SQUARE corners */}
+              <div className={clsx(
+                "absolute w-3 h-3 border-[#00F0FF]",
+                msg.sender === 'user'
+                  ? "top-0 left-0 border-t-2 border-l-2"  // User: Top-Left (Square)
+                  : "top-0 right-0 border-t-2 border-r-2" // Bot: Top-Right (Square)
+              )}></div>
+              <div className={clsx(
+                "absolute w-3 h-3 border-[#00F0FF]",
+                msg.sender === 'user'
+                  ? "bottom-0 right-0 border-b-2 border-r-2" // User: Bottom-Right (Square)
+                  : "bottom-0 left-0 border-b-2 border-l-2"  // Bot: Bottom-Left (Square)
+              )}></div>
 
               <div className="font-mono text-[10px] opacity-70 mb-2 flex items-center gap-2">
                 {msg.sender === 'user' ? '>> USER_COMMAND' : '>> SYS_RESPONSE'}

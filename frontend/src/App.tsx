@@ -79,7 +79,7 @@ function App() {
       <div className="bg-logo-fixed"></div>
 
       {/* Ambient Glow */}
-      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#00F0FF] opacity-[0.05] blur-[100px] pointer-events-none rounded-full"></div>
+      <div className="ambient-glow"></div>
 
       {/* Top Status Bar (HUD Header) */}
       <header className="h-14 flex items-center justify-between px-6 border-b border-[rgba(0,240,255,0.2)] bg-[rgba(2,4,8,0.8)] backdrop-blur-sm z-20 shrink-0">

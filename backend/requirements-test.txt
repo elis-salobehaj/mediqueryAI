@@ -11,7 +11,8 @@ argon2-cffi
 python-multipart
 authlib
 pytest
-llama-index
-llama-index-llms-ollama
-llama-index-embeddings-huggingface
 sqlalchemy
+# Heavy libraries excluded (mocked in conftest.py):
+# llama-index
+# llama-index-llms-ollama
+# llama-index-embeddings-huggingface
