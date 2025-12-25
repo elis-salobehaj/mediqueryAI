@@ -17,7 +17,7 @@ We have removed the need for local Ollama installation. The project now runs ent
 Edit `backend/.env` (create from `.env.example`):
 ```bash
 USE_LOCAL_MODEL=true
-LOCAL_MODEL_NAME=qwen3:latest
+LOCAL_MODEL_NAME=qwen2.5-coder:7b
 OLLAMA_HOST=http://ollama:11434  # Use the container name 'ollama'
 ```
 
@@ -26,7 +26,7 @@ OLLAMA_HOST=http://ollama:11434  # Use the container name 'ollama'
 ```bash
 docker compose up -d
 ```
-The Ollama container will automatically pull `qwen3:latest`, `gemma3:4b`, and `qwen2.5:3b` on the first run.
+The Ollama container will automatically pull `qwen2.5-coder:7b`, `sqlcoder:7b`, `llama3.1` and `qwen3:latest` on the first run.
 
 ### 4. Verify GPU Usage
 
@@ -40,10 +40,12 @@ docker compose logs ollama | grep "GPU"
 |-------|------|-----|-------|---------|----------|
 | Model | Size | RAM | Speed | Quality | Best For |
 |-------|------|-----|-------|---------|----------|
-| **qwen3:latest** ⭐ | 4.5GB | 8GB | ⚡⚡ | ⭐⭐⭐⭐⭐+ | Coding, Reasoning, SQL (Top Choice) |
-| **gemma3:4b** | 2.8GB | 4-6GB | ⚡⚡⚡ | ⭐⭐⭐⭐ | General, Creative, Instruction |
-| **qwen2.5:3b** | 2GB | 4GB | ⚡⚡⚡ | ⭐⭐⭐⭐ | Fast Coding |
-| **phi3:mini** | 2.3GB | 4GB | ⚡⚡⚡ | ⭐⭐⭐⭐ | General purpose |
+| Compare | Size | RAM | Speed | Quality | Best For |
+|-------|------|-----|-------|---------|----------|
+| **qwen2.5-coder:7b** ⭐ | 4.7GB | 8GB | ⚡⚡ | ⭐⭐⭐⭐⭐+ | Coding, SQL (Top Choice) |
+| **sqlcoder:7b** | 4.1GB | 8GB | ⚡⚡ | ⭐⭐⭐⭐⭐ | Pure SQL Generation |
+| **llama3.1** | 4.7GB | 8GB | ⚡⚡ | ⭐⭐⭐⭐ | General Reasoning |
+| **qwen3:latest** | 4.5GB | 8GB | ⚡⚡ | ⭐⭐⭐⭐ | Balanced Performance |
 
 
 ## Switching Between Local and Cloud
@@ -52,7 +54,7 @@ docker compose logs ollama | grep "GPU"
 ```bash
 # In backend/.env
 USE_LOCAL_MODEL=true
-LOCAL_MODEL_NAME=qwen3:latest
+LOCAL_MODEL_NAME=qwen2.5-coder:7b
 
 ```
 
