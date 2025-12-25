@@ -1,4 +1,4 @@
-# AI Healthcare Data Agent (POC)
+# AI Healthcare Data Agent
 
 An intelligent healthcare data analysis system that combines natural language processing with interactive data visualizations. Ask questions in plain English and get instant insights with beautiful Plotly.js charts.
 
@@ -58,6 +58,7 @@ This will:
 
 - 🤖 **Natural Language Queries**: Ask questions in plain English about healthcare data
 - 📊 **60+ Interactive Visualizations**: Powered by Plotly.js with real-time chart type switching
+- 🧠 **Explainable AI**: View the agent's step-by-step thinking process and SQL generation logic
 - 🔐 **Authentication & Security**: Sci-Fi themed Login/Register, JWT protection, and GitHub Secrets integration
 - 💬 **Persistent Chat History**: Context-aware conversations suitable for follow-up questions
 - 🎨 **Futuristic HUD Interface**: Cyberpunk-inspired dark theme with glassmorphism effects
