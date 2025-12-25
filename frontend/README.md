@@ -42,11 +42,15 @@ The futuristic interface for the MediQuery AI healthcare data agent. Built with 
 
 ## 📂 Project Structure
 
-- `src/components/`: Reusable UI components
-  - `ChatBox.tsx`: The heart of the app. Handles user input, keeps chat history, and displays the **Thinking Process**.
-  - `PlotlyVisualizer.tsx`: The brain of the visualization logic.
-- `src/App.tsx`: Main layout wrapper.
-- `src/index.css`: Global styles and Tailwind directives.
+- `src/`
+  - `main.tsx`: Application entry point.
+  - `App.tsx`: Main layout wrapper and routing logic.
+  - `index.css`: Global styles and Tailwind directives.
+  - `components/`: Reusable UI components
+    - `ChatBox.tsx`: The heart of the app. Handles user input, keeps chat history, and displays the **Thinking Process**.
+    - `PlotlyVisualizer.tsx`: The brain of the visualization logic (60+ chart types).
+    - `Configuration.tsx`: Settings panel for model selection (Local vs Cloud).
+    - `Login.tsx`: User authentication interface.
 
 ## 🧪 Testing
 
