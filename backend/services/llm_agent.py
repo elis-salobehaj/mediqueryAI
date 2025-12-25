@@ -50,9 +50,10 @@ class LLMAgent:
         """Returns a list of available models based on configuration."""
         if self.use_local:
             return [
-                {"id": "qwen3:latest", "name": "Qwen 3 (7B) - DEFAULT"},
-                {"id": "gemma3:4b", "name": "Gemma 3 (4B)"},
-                {"id": "qwen2.5:3b", "name": "Qwen 2.5 (3B)"},
+                {"id": "qwen2.5-coder:7b", "name": "Qwen 2.5 Coder (7B) - RECOMMENDED"},
+                {"id": "sqlcoder:7b", "name": "Defog SQLCoder (7B)"},
+                {"id": "llama3.1", "name": "Llama 3.1 (8B)"},
+                {"id": "qwen3:latest", "name": "Qwen 3 (7B)"},
             ]
         else:
             return [

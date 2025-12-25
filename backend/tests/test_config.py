@@ -25,5 +25,7 @@ def test_get_models_local():
             assert response.status_code == 200
             models = response.json()
             assert len(models) >= 3
-            assert models[0]["id"] == "qwen3:latest"
-            assert any(m["id"] == "gemma3:4b" for m in models)
+            # Verify our top picks are present
+            assert any(m["id"] == "qwen2.5-coder:7b" for m in models)
+            assert any(m["id"] == "sqlcoder:7b" for m in models)
+            assert any(m["id"] == "llama3.1" for m in models)

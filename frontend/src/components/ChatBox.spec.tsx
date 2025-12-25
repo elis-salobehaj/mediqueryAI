@@ -29,7 +29,6 @@ test('handles fetch error by using fallback defaults', async ({ mount, page }) =
 
   const component = await mount(<ChatBox messages={[]} setMessages={() => { }} />);
 
-  // Expect fallback default model (e.g., GEMMA 3 27B from your constants)
-  // Note: Adjust text based on actual default in code
-  await expect(component.getByText(/GEMMA 3 27B/i)).toBeVisible();
+  // Expect fallback default model (Qwen 2.5 Coder is now first in fallback list)
+  await expect(component.getByText(/Qwen 2.5 Coder/i)).toBeVisible();
 });
