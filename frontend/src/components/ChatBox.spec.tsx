@@ -32,3 +32,26 @@ test('handles fetch error by using fallback defaults', async ({ mount, page }) =
   // Expect fallback default model (Qwen 2.5 Coder is now first in fallback list)
   await expect(component.getByText(/Qwen 2.5 Coder/i)).toBeVisible();
 });
+
+test('renders thinking process steps when provided', async ({ mount }) => {
+  const messagesWithThoughts = [{
+    id: '1',
+    sender: 'bot' as const,
+    text: 'Here is the answer.',
+    thoughts: ['Step 1: Analyzed query', 'Step 2: Generated SQL']
+  }];
+
+  // @ts-ignore - bypassing strict type check for test convenience if Types clash
+  const component = await mount(<ChatBox messages={messagesWithThoughts} setMessages={() => { }} />);
+
+  // Check for the summary detail
+  await expect(component.getByText('SYSTEM_THOUGHT_PROCESS')).toBeVisible();
+
+  // Verify steps are present (even if hidden in details, they exist in DOM, check visibility logic)
+  // Details element content is usually visible to getByText unless "hidden" CSS is applied. 
+  // But let's click to be sure.
+  await component.getByText('SYSTEM_THOUGHT_PROCESS').click();
+
+  await expect(component.getByText('Step 1: Analyzed query')).toBeVisible();
+  await expect(component.getByText('Step 2: Generated SQL')).toBeVisible();
+});

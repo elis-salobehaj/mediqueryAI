@@ -50,8 +50,8 @@ class QueryResponse(BaseModel):
     data: dict
     insight: str
     visualization_type: str = "table" # 'bar', 'pie', 'line', 'scatter', 'map', 'table'
-    visualization_type: str = "table" # 'bar', 'pie', 'line', 'scatter', 'map', 'table'
     error: str = None
+    meta: dict = None
 
 class Token(BaseModel):
     access_token: str
@@ -299,7 +299,11 @@ def query_data(request: QueryRequest = Body(...), current_user: dict = Depends(g
             sql=sql_query,
             data=results,
             insight=insight,
-            visualization_type=vis_type
+            visualization_type=vis_type,
+            meta={
+                "thoughts": llm_agent.last_thoughts,
+                "row_count": results.get('row_count', 0)
+            }
         )
     except Exception as e:
         import traceback

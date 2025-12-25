@@ -11,6 +11,7 @@ export interface Message {
   data?: any;
   sql?: string;
   visualization_type?: string;
+  thoughts?: string[];
 }
 
 function App() {
@@ -54,7 +55,8 @@ function App() {
             text: msg.text,
             data: msg.meta?.data,
             sql: msg.meta?.sql,
-            visualization_type: msg.meta?.visualization_type
+            visualization_type: msg.meta?.visualization_type,
+            thoughts: msg.meta?.thoughts
           }));
           setMessages(hist);
         } else {
