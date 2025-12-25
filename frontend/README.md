@@ -1,73 +1,65 @@
-# React + TypeScript + Vite
+# MediQuery AI - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The futuristic interface for the MediQuery AI healthcare data agent. Built with React 19, Vite, and Tailwind CSS.
 
-Currently, two official plugins are available:
+## 🌟 Key Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Cyberpunk / Sci-Fi Aesthetic**: Dark mode glassmorphism UI.
+- **Explainable AI Interface**: 
+  - Displays the agent's **"Thinking Process"** in a collapsible detail view.
+  - Shows Raw SQL generation steps.
+  - Transparent error handling.
+- **Dynamic Visualization Engine**:
+  - `PlotlyVisualizer.tsx` component automatically selects 1 of 60+ chart types based on data.
+  - Interactive zooming, panning, and exporting.
+- **Responsive Layout**: Works on desktop and large tablets.
 
-## React Compiler
+## 🛠️ Technology Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Framework**: React 19 + TypeScript
+- **Build Tool**: Vite (Blazing fast HMR)
+- **Styling**: Tailwind CSS + Custom CSS Variables
+- **Charts**: `react-plotly.js`
+- **Markdown**: `react-markdown` for streaming text rendering
 
-## Expanding the ESLint configuration
+## 🚀 Development Setup
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+2. **Run Development Server**:
+   ```bash
+   npm run dev
+   ```
+   Access at `http://localhost:3000`.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+3. **Build for Production**:
+   ```bash
+   npm run build
+   ```
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 📂 Project Structure
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- `src/`
+  - `main.tsx`: Application entry point.
+  - `App.tsx`: Main layout wrapper and routing logic.
+  - `index.css`: Global styles and Tailwind directives.
+  - `components/`: Reusable UI components
+    - `ChatBox.tsx`: The heart of the app. Handles user input, keeps chat history, and displays the **Thinking Process**.
+    - `PlotlyVisualizer.tsx`: The brain of the visualization logic (60+ chart types).
+    - `Configuration.tsx`: Settings panel for model selection (Local vs Cloud).
+    - `Login.tsx`: User authentication interface.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🧪 Testing
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+We use **Playwright** for End-to-End and Component testing.
+
+```bash
+# Run Component Tests (including ChatBox thinking process)
+npm run test-ct
+
+# Run E2E Tests
+npm run test-e2e
 ```

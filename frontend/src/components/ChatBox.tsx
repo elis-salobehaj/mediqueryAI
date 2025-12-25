@@ -115,7 +115,8 @@ const ChatBox: React.FC<ChatBoxProps> = ({ messages, setMessages }) => {
         text: resData.insight || "DATA RETRIEVED.",
         data: resData.data,
         sql: resData.sql,
-        visualization_type: resData.visualization_type
+        visualization_type: resData.visualization_type,
+        thoughts: resData.meta?.thoughts
       };
 
       setMessages(prev => [...prev, botMsg]);
@@ -164,6 +165,26 @@ const ChatBox: React.FC<ChatBoxProps> = ({ messages, setMessages }) => {
               </div>
 
               <div className="leading-relaxed text-sm font-light tracking-wide">
+
+                {/* Thinking Process UI */}
+                {msg.sender === 'bot' && msg.thoughts && msg.thoughts.length > 0 && (
+                  <details className="mb-4 border border-[#00F0FF]/30 rounded-md bg-[#001015]/90 overflow-hidden group/thoughts open:bg-[#001520]">
+                    <summary className="cursor-pointer p-2 text-xs font-mono text-[#00F0FF]/70 hover:text-[#00F0FF] flex items-center gap-2 select-none">
+                      <FaMicrochip className="text-[10px]" />
+                      <span>SYSTEM_THOUGHT_PROCESS</span>
+                      <span className="opacity-50 text-[10px] ml-auto group-open/thoughts:hidden">[{msg.thoughts.length} STEPS]</span>
+                    </summary>
+                    <div className="p-3 pt-0 text-[10px] font-mono text-green-400/80 space-y-1 max-h-40 overflow-y-auto">
+                      {msg.thoughts.map((thought, idx) => (
+                        <div key={idx} className="flex gap-2">
+                          <span className="opacity-50">[{idx + 1}]</span>
+                          <span>{thought}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
+
                 <ReactMarkdown>{msg.text}</ReactMarkdown>
               </div>
 
