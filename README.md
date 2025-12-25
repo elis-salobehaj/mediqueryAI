@@ -21,7 +21,7 @@ chmod +x docker-start.sh
 ```
 
 This will:
-- ✅ Start Ollama (local LLM - qwen3:latest)
+- ✅ Start Ollama (local LLM - qwen2.5-coder:7b)
 - ✅ Start FastAPI backend
 - ✅ Start React frontend with Nginx
 - ✅ Pull the AI model (~2GB)
@@ -91,7 +91,7 @@ This will:
 
 ### Infrastructure
 - **Docker & Docker Compose** for containerization
-- **Ollama** for local LLM inference (Qwen2.5:3b)
+- **Ollama** for local LLM inference (qwen2.5-coder:7b)
 
 ---
 
@@ -107,7 +107,7 @@ cp .env.docker .env
 docker-compose up -d
 
 # Pull Ollama model
-docker exec -it mediquery-ai-ollama ollama pull qwen2.5:3b
+docker exec -it mediquery-ai-ollama ollama pull qwen2.5-coder:7b
 
 # Access the application
 # Frontend: http://localhost:3000
@@ -145,7 +145,7 @@ CHAT_HISTORY_RETENTION_HOURS=24
 
 # Local Model Configuration (Ollama)
 USE_LOCAL_MODEL=true              # true = local, false = cloud
-LOCAL_MODEL_NAME=qwen2.5:3b       # Ollama model
+LOCAL_MODEL_NAME=qwen2.5-coder:7b       # Ollama model
 OLLAMA_HOST=http://localhost:11434
 ```
 
@@ -208,20 +208,20 @@ Ollama is automatically included in the Docker setup - no separate installation 
 **Windows:**
 ```powershell
 winget install Ollama.Ollama
-ollama pull qwen2.5:3b
+ollama pull qwen2.5-coder:7b
 ```
 
 **Ubuntu/Linux:**
 ```bash
 curl -fsSL https://ollama.com/install.sh | sh
-ollama pull qwen2.5:3b
+ollama pull qwen2.5-coder:7b
 ```
 
 **Configure:**
 ```bash
 # In backend/.env
 USE_LOCAL_MODEL=true
-LOCAL_MODEL_NAME=qwen2.5:3b
+LOCAL_MODEL_NAME=qwen2.5-coder:7b
 ```
 
 **Full guide:** [backend/docs/LOCAL_MODEL_SETUP.md](backend/docs/LOCAL_MODEL_SETUP.md)
@@ -279,7 +279,7 @@ The system intelligently selects from **60+ Plotly.js chart types**:
 
 **Ollama model not found:**
 ```bash
-docker exec -it mediquery-ai-ollama ollama pull qwen2.5:3b
+docker exec -it mediquery-ai-ollama ollama pull qwen2.5-coder:7b
 ```
 
 **Backend can't connect to Ollama:**
