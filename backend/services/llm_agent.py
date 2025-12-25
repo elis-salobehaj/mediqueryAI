@@ -283,7 +283,10 @@ Rules:
 8. **Context Awareness**:
    - If the request is a follow-up (e.g., "which of them...", "show me the details"), use the Chat History to infer context.
    - You may need to incorporate filters or IDs from previous queries shown in history.
-
+9. **Typo Tolerance & Fuzzy Matching**:
+   - The user may make typos in table names (e.g., 'patiens' -> 'patients'), column names (e.g., 'outstandign' -> 'outstanding_balance'), or values.
+   - You MUST intelligently infer the correct table or column based on the provided schema.
+   - Do NOT fail if a simple typo is present; correct it and generate the valid SQL.
 User Request: {user_query}
 """
         logger.debug(f"Generating SQL with model: {self.model}")
