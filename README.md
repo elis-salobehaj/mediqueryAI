@@ -65,6 +65,21 @@ This will:
 - 🔄 **Smart Visualization Selection**: AI-powered chart type recommendation based on data structure
 - 🎯 **Hybrid LLM Support**: Local models (Ollama) or Cloud (Google Gemini)
 - 🐳 **Docker Ready**: One-command deployment with Docker Compose
+- 🧩 **Smart Schema Inference**: Auto-detects demographics vs. illness queries to optimize SQL joins (e.g. searching both 'chronic_conditions' and 'diagnosis' for ambiguous medical terms)
+
+## 🧪 Testing
+
+We provide automated scripts to run the full Test Suite (Backend Pytest + Frontend Playwright) in isolated Docker containers:
+
+```powershell
+# Windows
+.\run-tests.ps1
+
+# Linux / Mac
+./run-tests.sh
+```
+
+See [TESTING_GUIDE.md](TESTING_GUIDE.md) for detailed scenarios.
 
 ## ✨ Visual Insights
 
@@ -105,9 +120,6 @@ cp .env.docker .env
 
 # Start all services
 docker-compose up -d
-
-# Pull Ollama model
-docker exec -it mediquery-ai-ollama ollama pull qwen2.5-coder:7b
 
 # Access the application
 # Frontend: http://localhost:3000
@@ -352,7 +364,7 @@ Edit `frontend/src/components/PlotlyVisualizer.tsx`:
 
 ## Security Notes
 
-⚠️ **This is a POC/Demo Application**
+⚠️ **This is a Demo Application**
 
 For production use:
 - Implement proper authentication

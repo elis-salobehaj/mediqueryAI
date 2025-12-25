@@ -88,8 +88,8 @@ const getCompatibleChartTypes = (columns: string[], rows: any[], rowCount: numbe
 };
 
 // Utils for smart column selection
-const METRIC_KEYWORDS = ['count', 'total', 'sum', 'amount', 'revenue', 'profit', 'sales', 'val', 'cost', 'bill'];
-const DIMENSION_KEYWORDS = ['age', 'year', 'month', 'day', 'id', 'zip', 'code', 'lat', 'lon', 'rate', 'percent'];
+const METRIC_KEYWORDS = ['count', 'total', 'sum', 'amount', 'revenue', 'profit', 'sales', 'val', 'cost', 'bill', 'avg', 'average', 'score', 'rating', 'rate', 'percent', 'min', 'max'];
+const DIMENSION_KEYWORDS = ['age', 'year', 'month', 'day', 'id', 'zip', 'code', 'lat', 'lon'];
 
 const isMetricColumn = (colName: string) => METRIC_KEYWORDS.some(kw => colName.toLowerCase().includes(kw));
 const isDimensionColumn = (colName: string) => DIMENSION_KEYWORDS.some(kw => colName.toLowerCase().includes(kw));
@@ -609,11 +609,27 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
         const bestValueCol = getBestValueColumn(columns, rows);
         const useCount = shouldUseRowCount(bestValueCol);
 
+        // Helper to check if we should average or sum
+        const IS_AVG_KEYWORD = ['avg', 'average', 'rate', 'percent', 'score', 'min', 'max', 'mean', 'median'];
+        const shouldAverage = bestValueCol && IS_AVG_KEYWORD.some(kw => bestValueCol.toLowerCase().includes(kw));
+
         let value = 0;
+        let prefix = "";
+
         if (useCount) {
           value = rows.length;
+          prefix = "Total Count";
         } else {
-          value = rows.reduce((a: number, r: any) => a + (Number(r[bestValueCol!]) || 0), 0);
+          // Calculate Sum first
+          const sum = rows.reduce((a: number, r: any) => a + (Number(r[bestValueCol!]) || 0), 0);
+
+          if (shouldAverage && rows.length > 0) {
+            value = sum / rows.length;
+            prefix = `Avg ${bestValueCol}`;
+          } else {
+            value = sum;
+            prefix = `Total ${bestValueCol}`;
+          }
         }
 
         return {
@@ -622,8 +638,8 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             mode: 'number',
             value: value,
             domain: { x: [0, 1], y: [0, 1] },
-            title: { text: useCount ? 'Total Count' : bestValueCol, font: { color: '#00F0FF' } },
-            number: { font: { color: '#00F0FF', size: 60 } }
+            title: { text: prefix, font: { color: '#00F0FF' } },
+            number: { font: { color: '#00F0FF', size: 60 }, valueformat: shouldAverage ? ".1f" : "d" }
           }],
           layout: { ...baseLayout, title: 'KPI Indicator' }
         };

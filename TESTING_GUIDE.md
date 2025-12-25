@@ -1,23 +1,43 @@
 # End-to-End Testing Guide
 
-## Test Plan for AI Healthcare Data Agent
+## Automated Testing (Docker - Recommended)
 
-### Prerequisites for Docker Testing
+We have a dedicated test suite that runs inside Docker containers, nsuring a consistent environment isolated from your local machine.
 
-**Docker is NOT currently installed on this system.**
+### Quick Start
 
-To test the Docker setup, you need to:
-1. Install Docker Desktop from: https://www.docker.com/products/docker-desktop
-2. Restart your computer after installation
-3. Run `.\docker-start.ps1` to start all services
+```powershell
+# Windows (PowerShell)
+.\run-tests.ps1
+
+# Linux / Mac (Bash)
+chmod +x run-tests.sh
+./run-tests.sh
+```
+
+This script will:
+1. Build the test containers (caching dependencies for speed).
+2. Run **Pytest** for the backend logic and LLM integrations.
+3. Run **Playwright** component tests for the frontend.
 
 ---
 
 ## Manual Testing (Current Running Services)
 
-Since Docker is not installed, we'll test the currently running services:
-- Backend: http://localhost:8000
-- Frontend: http://localhost:5174 (or 5173)
+### Test Model Switching
+
+1. Select "GEMMA 3 27B" or "GEMINI 2.5 FLASH LITE" from dropdown
+2. Ask a query
+3. Select "Gemini Pro" from dropdown
+4. Ask the same query
+5. Verify both work (if cloud mode enabled)
+
+### Test Average Metric Aggregation
+
+1. Ask: "Show average age of patients by state"
+2. Switch visualization to "Indicator"
+3. Verify the number displayed is reasonable (e.g., ~40-60) and NOT a huge sum (e.g., >1000).
+4. Verify the label says "Avg age" or similar.
 
 ### Test Suite
 
@@ -80,262 +100,3 @@ Since Docker is not installed, we'll test the currently running services:
 - Can switch to area chart
 
 ---
-
-## Docker Testing (When Docker is Installed)
-
-### Step 1: Start Services
-
-```powershell
-# Run the quick start script
-.\docker-start.ps1
-
-# Or manually:
-docker-compose up -d
-docker exec -it mediquery-ai-ollama ollama pull qwen2.5:3b
-```
-
-### Step 2: Verify Services
-
-```powershell
-# Check all services are running
-docker-compose ps
-
-# Expected output:
-# NAME                    STATUS
-# antigravity-backend     Up (healthy)
-# antigravity-frontend    Up (healthy)
-# mediquery-ai-ollama      Up (healthy)
-```
-
-### Step 3: Test Endpoints
-
-```powershell
-# Test backend health
-curl http://localhost:8000/health
-
-# Expected: {"status":"healthy","service":"antigravity-backend",...}
-
-# Test Ollama
-curl http://localhost:11434/api/tags
-
-# Expected: List of installed models including qwen2.5:3b
-
-# Test frontend
-curl http://localhost:3000
-
-# Expected: HTML content
-```
-
-### Step 4: Run Query Tests
-
-Open http://localhost:3000 and run all 8 test queries above.
-
-### Step 5: Test Local Model
-
-```powershell
-# Verify local model is being used
-docker-compose logs backend | Select-String "local"
-
-# Expected: "Using local Ollama model: qwen2.5:3b"
-```
-
-### Step 6: Switch to Cloud Mode
-
-```powershell
-# Edit .env
-# Change: USE_LOCAL_MODEL=false
-# Add: GEMINI_API_KEY=your_actual_key or ANTHROPIC_API_KEY=your_actual_key
-
-# Restart backend
-docker-compose restart backend
-
-# Verify cloud mode
-docker-compose logs backend | Select-String "Gemini"
-
-# Expected: "Using Google Gemini API"
-```
-
----
-
-## Performance Tests
-
-### Response Time Test
-
-Run 10 queries and measure average response time:
-
-```
-Query 1: "Show patient count by state" - Expected: < 3s
-Query 2: "List all patients" - Expected: < 2s
-Query 3: "Distribution by gender" - Expected: < 2s
-...
-```
-
-**Target:**
-- Local Model (Qwen2.5): 1-3 seconds
-- Cloud Model (Gemini): 1-2 seconds
-
-### Load Test
-
-```powershell
-# Send 10 concurrent requests
-# (Requires Apache Bench or similar tool)
-ab -n 100 -c 10 http://localhost:8000/health
-```
-
-**Target:** 100% success rate
-
----
-
-## Integration Tests
-
-### Test Chat History Persistence
-
-1. Ask: "Show patient count by state"
-2. Refresh the page
-3. Verify chat history is still visible
-4. Expected: Previous conversation persists
-
-### Test Chart Type Switching
-
-1. Ask: "Distribution of patients by gender"
-2. Click "Bar" button above chart
-3. Verify chart changes to bar chart
-4. Click "Donut" button
-5. Verify chart changes to donut chart
-
-### Test Model Switching
-
-1. Select "GEMMA 3 27B" or "GEMINI 2.5 FLASH LITE" from dropdown
-2. Ask a query
-3. Select "Gemini Pro" from dropdown
-4. Ask the same query
-5. Verify both work (if cloud mode enabled)
-
----
-
-## Docker-Specific Tests
-
-### Volume Persistence Test
-
-```powershell
-# Create some chat history
-# Stop containers
-docker-compose down
-
-# Start again
-docker-compose up -d
-
-# Verify:
-# - Ollama model still installed
-# - Chat history still present
-```
-
-### Health Check Test
-
-```powershell
-# Check health status
-docker inspect antigravity-backend | Select-String "Health"
-
-# Expected: "Status": "healthy"
-```
-
-### Resource Usage Test
-
-```powershell
-# Monitor resource usage
-docker stats
-
-# Expected:
-# mediquery-ai-ollama: ~2-4GB RAM
-# antigravity-backend: ~500MB RAM
-# antigravity-frontend: ~50MB RAM
-```
-
----
-
-## Test Results Template
-
-```
-Date: ___________
-Tester: ___________
-Environment: [ ] Docker [ ] Manual
-
-Test 1: Basic Query
-Status: [ ] Pass [ ] Fail
-Notes: ___________
-
-Test 2: Pie Chart
-Status: [ ] Pass [ ] Fail
-Notes: ___________
-
-Test 3: Case-Insensitive
-Status: [ ] Pass [ ] Fail
-Notes: ___________
-
-Test 4: Scatter Plot
-Status: [ ] Pass [ ] Fail
-Notes: ___________
-
-Test 5: Hierarchical
-Status: [ ] Pass [ ] Fail
-Notes: ___________
-
-Test 6: Box Plot
-Status: [ ] Pass [ ] Fail
-Notes: ___________
-
-Test 7: Choropleth Map
-Status: [ ] Pass [ ] Fail
-Notes: ___________
-
-Test 8: Time Series
-Status: [ ] Pass [ ] Fail
-Notes: ___________
-
-Overall Status: [ ] All Pass [ ] Some Failures
-```
-
----
-
-## Known Limitations
-
-1. **Docker Required**: Full testing requires Docker Desktop
-2. **Model Download**: First run requires ~2GB download for Qwen2.5
-3. **RAM Requirements**: Minimum 8GB RAM recommended for Docker setup
-4. **Windows**: PowerShell execution policy may need adjustment
-
----
-
-## Next Steps
-
-1. **Install Docker Desktop** (if testing Docker setup)
-2. **Run Manual Tests** (using current running services)
-3. **Document Results** (use template above)
-4. **Report Issues** (create GitHub issues for any failures)
-
----
-
-## Quick Manual Test (No Docker)
-
-Since Docker is not installed, test with current services:
-
-```powershell
-# Open browser to:
-http://localhost:5174
-
-# Run these queries:
-1. "Show patient count by state"
-2. "Distribution of patients by gender"
-3. "List all patients with diabetes"
-4. "Show relationship between age and BMI"
-5. "Show patients by insurance type and income bracket"
-
-# Verify:
-- All queries return data
-- Visualizations render correctly
-- Chart type switching works
-- Patient names (not IDs) are shown
-- Case-insensitive search works
-```
-
-**This can be done RIGHT NOW without Docker!**

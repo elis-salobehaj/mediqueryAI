@@ -9,8 +9,18 @@ class MockModel:
 
 def test_llm_agent_history_integration(monkeypatch):
     # Mock LLM generation to avoid API calls
-    monkeypatch.setattr(llm_agent, "model", MockModel())
-    # Also ensure use_local is false or handled
+    # When use_local=False, generate_sql uses self.client.models.generate_content
+    # We need to mock self.client
+    
+    class MockGoogleClient:
+        class models:
+            @staticmethod
+            def generate_content(model, contents, config=None):
+                class MockResponse:
+                    text = "SELECT * FROM patients WHERE name LIKE '%John%'"
+                return MockResponse()
+
+    llm_agent.client = MockGoogleClient()
     llm_agent.use_local = False
     
     history = [

@@ -287,6 +287,14 @@ Rules:
    - The user may make typos in table names (e.g., 'patiens' -> 'patients'), column names (e.g., 'outstandign' -> 'outstanding_balance'), or values.
    - You MUST intelligently infer the correct table or column based on the provided schema.
    - Do NOT fail if a simple typo is present; correct it and generate the valid SQL.
+10. **Schema Hints & Search Strategy**:
+    - **Demographics Only (e.g. "count patients by state", "age distribution")**: Query ONLY the 'patients' table. Do NOT join 'visits' or 'billing' unless the query explicitly asks for visit/financial details.
+    - **Searching for an Illness/Disease**: If the user asks about a specific condition (e.g. 'diabetes') without specifying source:
+        - You MUST search **BOTH** `patients.chronic_condition` AND `visits.diagnosis`.
+        - Use `LEFT JOIN visits v ON p.patient_id = v.patient_id`.
+        - Use `WHERE (p.chronic_condition LIKE '%term%' OR v.diagnosis LIKE '%term%')`.
+        - Use `SELECT DISTINCT ...` to avoid duplicates.
+    - **Billing / Revenue**: Found in 'billing' table. Join 'billing' with 'visits' on 'visit_id', then 'visits' with 'patients' on 'patient_id'.
 User Request: {user_query}
 """
         logger.debug(f"Generating SQL with model: {self.model}")
