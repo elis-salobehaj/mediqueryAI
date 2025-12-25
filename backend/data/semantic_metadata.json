@@ -1,0 +1,36 @@
+[
+  {
+    "table_name": "patients",
+    "description": "Contains demographic information about patients (people, users, clients).",
+    "columns": {
+      "patient_id": "Unique identifier for the patient",
+      "name": "Full name of the patient",
+      "age": "Age of the patient in years",
+      "gender": "Gender of the patient (Male/Female/Other)",
+      "state": "US State of residence (location, region, geography, country)"
+    }
+  },
+  {
+    "table_name": "visits",
+    "description": "Records of patient medical visits, encounters, and appointments.",
+    "columns": {
+      "visit_id": "Unique identifier for the visit",
+      "patient_id": "Foreign key linking to patients table",
+      "visit_date": "Date of the medical visit (YYYY-MM-DD)",
+      "department": "Hospital department (e.g., Cardiology, ER)",
+      "doctor_id": "Identifier of the attending doctor",
+      "diagnosis": "Primary diagnosis code, condition, illness, disease, ailment"
+    }
+  },
+  {
+    "table_name": "billing",
+    "description": "Financial records associated with patient visits.",
+    "columns": {
+      "bill_id": "Unique identifier for the bill",
+      "visit_id": "Foreign key linking to visits table",
+      "amount": "Total amount billed in USD",
+      "status": "Payment status (Paid, Pending, Overdue)",
+      "insurance_provider": "Name of the insurance company"
+    }
+  }
+]

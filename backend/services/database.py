@@ -14,7 +14,9 @@ class DatabaseService:
         else:
             self.data_dir = data_dir
             
-        self.conn = sqlite3.connect(":memory:", check_same_thread=False)
+        # Use file-based DB to allow sharing with LlamaIndex/SQLAlchemy
+        db_path = os.path.join(base_dir, "medical.db")
+        self.conn = sqlite3.connect(db_path, check_same_thread=False)
         self.cursor = self.conn.cursor()
         self._load_data()
 

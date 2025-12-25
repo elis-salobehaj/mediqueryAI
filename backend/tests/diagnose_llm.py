@@ -7,7 +7,7 @@ sys.path.append(os.path.join(os.getcwd()))
 from services.database import db_service
 from services.llm_agent import llm_agent
 from dotenv import load_dotenv
-import google.generativeai as genai
+
 from pathlib import Path
 
 # Load env explicitly from root
