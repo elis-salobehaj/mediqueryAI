@@ -16,14 +16,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Cache Docker layers
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-backend-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-backend-
-
       - name: Free up disk space
         run: |
           docker system prune -af --volumes
@@ -38,8 +30,8 @@ jobs:
           # Build only backend-unit
           docker buildx bake -f docker-compose.test.yml backend-unit \
             --allow=fs.read=/tmp --allow=fs.write=/tmp \
-            --set "*.cache-from=type=local,src=/tmp/.buildx-cache" \
-            --set "*.cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max" \
+            --set "*.cache-from=type=gha,scope=backend" \
+            --set "*.cache-to=type=gha,mode=max,scope=backend" \
             --load
             
           # Run tests
@@ -50,12 +42,6 @@ jobs:
             -e USE_LOCAL_MODEL \
             --rm backend-unit
 
-      - name: Clean up build cache
-        if: always()
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache || true
-
   frontend-test:
     runs-on: ubuntu-latest
     steps:
@@ -64,14 +50,6 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      - name: Cache Docker layers
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-frontend-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-frontend-
 
       - name: Free up disk space
         run: |
@@ -82,15 +60,9 @@ jobs:
           # Build only frontend-component
           docker buildx bake -f docker-compose.test.yml frontend-component \
             --allow=fs.read=/tmp --allow=fs.write=/tmp \
-            --set "*.cache-from=type=local,src=/tmp/.buildx-cache" \
-            --set "*.cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max" \
+            --set "*.cache-from=type=gha,scope=frontend" \
+            --set "*.cache-to=type=gha,mode=max,scope=frontend" \
             --load
 
           # Run tests
           docker compose -f docker-compose.test.yml run --rm frontend-component
-
-      - name: Clean up build cache
-        if: always()
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache || true
