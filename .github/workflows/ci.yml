@@ -7,9 +7,8 @@ on:
     branches: [ "**" ]
 
 jobs:
-  test:
+  backend-test:
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -21,42 +20,29 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          key: ${{ runner.os }}-backend-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-buildx-
+            ${{ runner.os }}-backend-
 
       - name: Free up disk space
         run: |
-          # Remove unnecessary packages and Docker images
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
           docker system prune -af --volumes
-          df -h
 
-      - name: Build Test Containers
-        run: |
-          docker buildx bake -f docker-compose.test.yml \
-            backend-unit frontend-component \
-            --allow=fs.read=/tmp \
-            --allow=fs.write=/tmp \
-            --set "*.cache-from=type=local,src=/tmp/.buildx-cache" \
-            --set "*.cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max" \
-            --load
-
-      - name: Clean up build cache
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-          # Prune dangling images to free space
-          docker image prune -f
-          df -h
-
-      - name: Run Backend Unit Tests
+      - name: Build and Run Backend Unit Tests
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
           CHAT_HISTORY_RETENTION_HOURS: 24
           USE_LOCAL_MODEL: true
         run: |
+          # Build only backend-unit
+          docker buildx bake -f docker-compose.test.yml backend-unit \
+            --allow=fs.read=/tmp --allow=fs.write=/tmp \
+            --set "*.cache-from=type=local,src=/tmp/.buildx-cache" \
+            --set "*.cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max" \
+            --load
+            
+          # Run tests
           docker compose -f docker-compose.test.yml run \
             -e GEMINI_API_KEY \
             -e JWT_SECRET_KEY \
@@ -64,6 +50,47 @@ jobs:
             -e USE_LOCAL_MODEL \
             --rm backend-unit
 
-      - name: Run Frontend Component Tests
+      - name: Clean up build cache
+        if: always()
         run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache || true
+
+  frontend-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-frontend-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-frontend-
+
+      - name: Free up disk space
+        run: |
+          docker system prune -af --volumes
+
+      - name: Build and Run Frontend Component Tests
+        run: |
+          # Build only frontend-component
+          docker buildx bake -f docker-compose.test.yml frontend-component \
+            --allow=fs.read=/tmp --allow=fs.write=/tmp \
+            --set "*.cache-from=type=local,src=/tmp/.buildx-cache" \
+            --set "*.cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max" \
+            --load
+
+          # Run tests
           docker compose -f docker-compose.test.yml run --rm frontend-component
+
+      - name: Clean up build cache
+        if: always()
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache || true
