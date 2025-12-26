@@ -54,20 +54,35 @@ The futuristic interface for the MediQuery AI healthcare data agent. Built with 
 
 ## 🧪 Testing
 
-We use **Playwright** for End-to-End and Component testing.
+We use **Playwright** for both Component and End-to-End testing.
 
+### Component Tests (Fast)
 ```bash
-# Run Component Tests (including ChatBox thinking process)
-npm run test-ct
+# Run locally
+npx playwright test
 
-# Run E2E Tests
-npm run test-e2e
+# Run in Docker (recommended for CI)
+cd ..
+./run-ci.sh  # Includes frontend component tests
 ```
 
-### Dockerized Testing (Recommended)
-We use a custom `Dockerfile.test` (with cached browsers) to run tests in a consistent environment similar to CI.
+### E2E Tests (Full Stack)
+```bash
+# Run locally (requires backend running)
+npx playwright test -c playwright-e2e.config.ts
 
-```powershell
-# Run via root script
-..\run-tests.ps1
+# Run in Docker (recommended - full stack)
+cd ..
+./run-e2e.sh  # Spins up backend + frontend + runs tests
+```
+
+### Dockerized Testing
+We use custom Dockerfiles with cached browsers for consistent CI/CD environments:
+- `Dockerfile.test`: Component tests (isolated)
+- Full stack via `docker-compose.test.yml` for E2E
+
+```bash
+# From project root
+./run-ci.sh   # Fast unit + component tests
+./run-e2e.sh  # Full integration tests
 ```

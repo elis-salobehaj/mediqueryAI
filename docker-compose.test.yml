@@ -1,26 +1,81 @@
 services:
-  backend-test:
+  # ==========================================
+  # 1. CI Services (Isolated Unit/Component)
+  # ==========================================
+  
+  # Isolated Backend Unit Tests (Pytest)
+  backend-unit:
     build:
       context: ./backend
       dockerfile: Dockerfile.test_lite
-    volumes:
-      - ./backend:/app
     environment:
       - USE_LOCAL_MODEL=true
-      # Add dummy keys if tests require them and don't mock them
       - GEMINI_API_KEY=test
       - ANTHROPIC_API_KEY=test
+    # No volumes! We rely on COPY in Dockerfile for hermetic builds.
     command: python -m pytest -v
 
-  frontend-test-ct:
+  # Isolated Frontend Component Tests (Playwright CT)
+  frontend-component:
     build:
       context: ./frontend
       dockerfile: Dockerfile.test
-    volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
-      # Do NOT mount full . to avoid overwriting node_modules
     environment:
       - CI=true
-    # Command is now inherited from Dockerfile (CMD) or overridden here
-    command: npm run test-ct
+    # No volumes!
+    command: npx playwright test
+
+  # ==========================================
+  # 2. E2E Services (Full Stack Integration)
+  # ==========================================
+
+  # Real Backend (Mocked LLM for stability)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - USE_LOCAL_MODEL=true
+      - GEMINI_API_KEY=test
+      - ANTHROPIC_API_KEY=test
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  # Real Frontend (Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Bake in the internal docker network URL
+        - VITE_API_URL=http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:80" # Exposed so we can debug locally if needed
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # E2E Runner (Ephemerally runs tests against the stack)
+  e2e-runner:
+    image: mcr.microsoft.com/playwright:v1.57.0-jammy
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    environment:
+      - CI=true
+      # Point Playwright to the internal frontend service name
+      - PLAYWRIGHT_TEST_BASE_URL=http://frontend:80
+    depends_on:
+      frontend:
+        condition: service_healthy
+    command: >
+      sh -c "npm install && npx playwright test -c playwright-e2e.config.ts"
