@@ -69,15 +69,31 @@ This will:
 
 ## 🧪 Testing
 
-We provide automated scripts to run the full Test Suite (Backend Pytest + Frontend Playwright) in isolated Docker containers:
+We provide two dedicated test suites running in isolated Docker containers:
 
-```powershell
+### CI Tests (Fast - Unit & Component)
+```bash
+# Linux/Mac
+./run-ci.sh
+
 # Windows
-.\run-tests.ps1
-
-# Linux / Mac
-./run-tests.sh
+.\run-ci.ps1
 ```
+Runs isolated unit and component tests (~30 seconds):
+- ✅ 13 backend unit tests (pytest)
+- ✅ 10 frontend component tests (Playwright)
+
+### E2E Tests (Full Stack Integration)
+```bash
+# Linux/Mac
+./run-e2e.sh
+
+# Windows
+.\run-e2e.ps1
+```
+Runs full-stack integration tests (~2-3 minutes):
+- ✅ End-to-end user flows (Playwright)
+- ✅ Tests against real backend + frontend
 
 See [TESTING_GUIDE.md](TESTING_GUIDE.md) for detailed scenarios.
 

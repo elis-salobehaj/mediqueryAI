@@ -1,24 +1,41 @@
-# End-to-End Testing Guide
+# Testing Guide
 
 ## Automated Testing (Docker - Recommended)
 
-We have a dedicated test suite that runs inside Docker containers, nsuring a consistent environment isolated from your local machine.
+We provide two dedicated test suites that run in isolated Docker containers:
 
-### Quick Start
+### CI Tests (Fast - Unit & Component)
 
-```powershell
-# Windows (PowerShell)
-.\run-tests.ps1
+```bash
+# Linux/Mac
+./run-ci.sh
 
-# Linux / Mac (Bash)
-chmod +x run-tests.sh
-./run-tests.sh
+# Windows
+.\run-ci.ps1
 ```
 
-This script will:
-1. Build the test containers (caching dependencies for speed).
-2. Run **Pytest** for the backend logic and LLM integrations.
-3. Run **Playwright** component tests for the frontend.
+**What it runs (~30 seconds):**
+1. **Backend Unit Tests** - 13 pytest tests for API logic, auth, and LLM integration
+2. **Frontend Component Tests** - 10 Playwright tests for React components
+
+**Use case:** Run before every commit, in CI/CD pipelines
+
+### E2E Tests (Full Stack Integration)
+
+```bash
+# Linux/Mac
+./run-e2e.sh
+
+# Windows
+.\run-e2e.ps1
+```
+
+**What it runs (~2-3 minutes):**
+1. Spins up full stack (backend + frontend + database)
+2. Runs Playwright E2E tests against real services
+3. Tests complete user flows (login, queries, visualizations)
+
+**Use case:** Run before merging PRs, deployment validation
 
 ---
 

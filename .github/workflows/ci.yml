@@ -7,9 +7,8 @@ on:
     branches: [ "**" ]
 
 jobs:
-  test:
+  backend-test:
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -17,40 +16,53 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Cache Docker layers
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-
-      - name: Build Test Containers
+      - name: Free up disk space
         run: |
-          docker buildx bake -f docker-compose.test.yml \
-            --allow=fs.read=/tmp \
-            --allow=fs.write=/tmp \
-            --set "*.cache-from=type=local,src=/tmp/.buildx-cache" \
-            --set "*.cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max" \
-            --load
+          docker system prune -af --volumes
 
-      - name: Move cache
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-
-      - name: Run Backend Tests
+      - name: Build and Run Backend Unit Tests
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
           CHAT_HISTORY_RETENTION_HOURS: 24
+          USE_LOCAL_MODEL: true
         run: |
+          # Build only backend-unit
+          docker buildx bake -f docker-compose.test.yml backend-unit \
+            --allow=fs.read=/tmp --allow=fs.write=/tmp \
+            --set "*.cache-from=type=gha,scope=backend" \
+            --set "*.cache-to=type=gha,mode=max,scope=backend" \
+            --load
+            
+          # Run tests
           docker compose -f docker-compose.test.yml run \
             -e GEMINI_API_KEY \
             -e JWT_SECRET_KEY \
             -e CHAT_HISTORY_RETENTION_HOURS \
-            --rm backend-test
+            -e USE_LOCAL_MODEL \
+            --rm backend-unit
 
-      - name: Run Frontend Tests
+  frontend-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Free up disk space
         run: |
-          docker compose -f docker-compose.test.yml run --rm frontend-test-ct
+          docker system prune -af --volumes
+
+      - name: Build and Run Frontend Component Tests
+        run: |
+          # Build only frontend-component
+          docker buildx bake -f docker-compose.test.yml frontend-component \
+            --allow=fs.read=/tmp --allow=fs.write=/tmp \
+            --set "*.cache-from=type=gha,scope=frontend" \
+            --set "*.cache-to=type=gha,mode=max,scope=frontend" \
+            --load
+
+          # Run tests
+          docker compose -f docker-compose.test.yml run --rm frontend-component
