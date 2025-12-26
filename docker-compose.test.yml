@@ -7,7 +7,9 @@ services:
   backend-unit:
     build:
       context: ./backend
-      dockerfile: Dockerfile.test_lite
+      dockerfile: Dockerfile
+      args:
+        BUILD_MODE: ci
     environment:
       - USE_LOCAL_MODEL=true
       - GEMINI_API_KEY=test
@@ -19,7 +21,8 @@ services:
   frontend-component:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.test
+      dockerfile: Dockerfile
+      target: test
     environment:
       - CI=true
     # No volumes!
@@ -34,6 +37,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        BUILD_MODE: production
     environment:
       - USE_LOCAL_MODEL=true
       - GEMINI_API_KEY=test
@@ -50,6 +55,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: production
       args:
         # Bake in the internal docker network URL
         - VITE_API_URL=http://backend:8000

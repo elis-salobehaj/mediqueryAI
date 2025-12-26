@@ -35,6 +35,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        BUILD_MODE: production
     container_name: mediquery-ai-backend
     ports:
       - "8000:8000"
@@ -62,6 +64,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: production
     container_name: mediquery-ai-frontend
     ports:
       - "3000:80"

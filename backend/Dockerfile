@@ -1,5 +1,8 @@
-# Backend Dockerfile
+# Backend Dockerfile - Optimized for CI Size & Prod Performance
 FROM python:3.12-slim
+
+# Build argument to control cleanup mode: 'ci' or 'production' (default)
+ARG BUILD_MODE=production
 
 WORKDIR /app
 
@@ -13,9 +16,17 @@ RUN apt-get update && apt-get install -y \
 
 # Copy requirements first for better caching
 COPY requirements.txt .
+COPY requirements-ci.txt .
+
 # Use BuildKit cache mount to persist pip cache across builds
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install -r requirements.txt
+    if [ "$BUILD_MODE" = "ci" ]; then \
+        echo "CI Mode: Installing lightweight dependencies (no heavy ML/PyTorch)"; \
+        pip install -r requirements-ci.txt; \
+    else \
+        echo "Production Mode: Installing full dependencies (with LlamaIndex/PyTorch)"; \
+        pip install -r requirements.txt; \
+    fi
 
 # Copy application code
 COPY . .
