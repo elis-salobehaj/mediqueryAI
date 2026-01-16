@@ -8,8 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test-ct": "playwright test -c playwright-ct.config.ts",
-    "test-e2e": "playwright test -c playwright.config.ts"
+    "test": "playwright test",
+    "test-e2e": "playwright test -c playwright-e2e.config.ts"
   },
   "dependencies": {
     "axios": "^1.13.2",

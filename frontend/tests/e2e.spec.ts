@@ -14,7 +14,7 @@ test('homepage has title and main elements', async ({ page }) => {
 
   // Expect to see the ChatBox input after login
   // Wait up to 10s for backend response
-  await expect(page.getByPlaceholder(/Enter your medical query/i)).toBeVisible({ timeout: 10000 });
+  await expect(page.getByPlaceholder(/ENTER INSTRUCTION/i)).toBeVisible({ timeout: 10000 });
 });
 
 test('shows error message on failed guest login', async ({ page }) => {

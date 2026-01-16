@@ -23,16 +23,16 @@ The backend features a sophisticated **LLM Agent** (`services/llm_agent.py`) des
 
 ## 🧪 Testing
 
-We use **Pytest** for backend logic tests.
+We use **Pytest** for backend unit tests.
 
 ### Dockerized Testing (Recommended)
-Run the full suite in an isolated container:
-```powershell
-# Windows
-..\run-tests.ps1
-
+Run tests in an isolated container:
+```bash
 # Linux/Mac
-../run-tests.sh
+../run-ci.sh  # Includes backend unit tests
+
+# Windows
+..\run-ci.ps1
 ```
 
 ### Manual Testing
@@ -41,5 +41,5 @@ Run the full suite in an isolated container:
 pip install -r requirements.txt
 
 # Run tests
-pytest
+pytest -v
 ```

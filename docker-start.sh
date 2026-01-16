@@ -44,10 +44,10 @@ echo ""
 
 if [ "$USE_LOCAL" = "true" ]; then
     echo "🤖 Local model mode detected - starting with Ollama..."
-    docker compose --profile local-model up -d
+    docker compose --profile local-model up -d --build
 else
     echo "☁️  Cloud mode detected - starting without Ollama..."
-    docker compose up -d
+    docker compose up -d --build
 fi
 
 echo ""
