@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/elis-salobehaj/mediqueryAI/compare/mediquery-ai-v1.3.0...mediquery-ai-v1.4.0) (2026-01-16)
+
+
+### Features
+
+* trigger release for accumulated optimizations and fixes ([#10](https://github.com/elis-salobehaj/mediqueryAI/issues/10)) ([cb247fe](https://github.com/elis-salobehaj/mediqueryAI/commit/cb247feed6236f4a86936def327446ddc2140cf5))
+
 ## [1.3.0](https://github.com/elis-salobehaj/mediqueryAI/compare/mediquery-ai-v1.2.0...mediquery-ai-v1.3.0) (2025-12-25)
 
 
