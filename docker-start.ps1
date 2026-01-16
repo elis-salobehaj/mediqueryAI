@@ -54,7 +54,7 @@ Write-Host ""
 
 if ($useLocal -eq "true") {
     Write-Host "[LOCAL] Local model mode detected - starting with Ollama..." -ForegroundColor Cyan
-    docker compose --profile local-model up -d
+    docker compose --profile local-model up -d --build
     
     if ($LASTEXITCODE -ne 0) {
         Write-Host "[X] Failed to start Docker services" -ForegroundColor Red
@@ -71,7 +71,7 @@ if ($useLocal -eq "true") {
     }
 } else {
     Write-Host "[CLOUD] Cloud mode detected - starting without Ollama..." -ForegroundColor Cyan
-    docker compose up -d
+    docker compose up -d --build
 }
 
 Write-Host ""
