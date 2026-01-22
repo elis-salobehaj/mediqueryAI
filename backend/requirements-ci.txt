@@ -1,14 +1,13 @@
-fastapi
-uvicorn
-python-dotenv
-google-genai
-google-api-core
-pandas
-ollama
+# CI dependencies - base + testing without heavy ML libraries
+-r requirements-test.txt
+
+# CI may need both Bedrock and cloud API support for testing
+langchain-anthropic>=0.2.0
 anthropic>=0.25.0
-python-jose[cryptography]
-argon2-cffi
-python-multipart
-authlib
-pytest
-sqlalchemy
+langchain-aws>=0.2.0
+boto3>=1.35.0
+ollama>=0.3.0
+langchain-ollama>=0.1.0
+google-genai>=0.7.0
+google-api-core>=2.19.0
+langchain-google-genai>=2.0.0

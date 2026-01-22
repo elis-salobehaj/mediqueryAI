@@ -1,32 +1,48 @@
 # Backend Dockerfile - Optimized for CI Size & Prod Performance
 FROM python:3.12-slim
 
-# Build argument to control cleanup mode: 'ci' or 'production' (default)
-ARG BUILD_MODE=production
+# Build argument to control which dependencies to install
+# Options: 'bedrock', 'local', 'full', 'ci' (default: bedrock for lightweight cloud deployment)
+ARG BUILD_MODE=bedrock
 
 WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
+    g++ \
     libffi-dev \
     libssl-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY requirements.txt .
-COPY requirements-ci.txt .
+# Copy all requirements files for better caching
+COPY requirements*.txt ./
 
 # Use BuildKit cache mount to persist pip cache across builds
 RUN --mount=type=cache,target=/root/.cache/pip \
-    if [ "$BUILD_MODE" = "ci" ]; then \
-        echo "CI Mode: Installing lightweight dependencies (no heavy ML/PyTorch)"; \
-        pip install -r requirements-ci.txt; \
-    else \
-        echo "Production Mode: Installing full dependencies (with LlamaIndex/PyTorch)"; \
-        pip install -r requirements.txt; \
-    fi
+    case "$BUILD_MODE" in \
+        bedrock) \
+            echo "Bedrock Mode: Installing lightweight cloud dependencies (no heavy ML)"; \
+            pip install -r requirements-bedrock.txt; \
+            ;; \
+        local) \
+            echo "Local Mode: Installing dependencies for local models (includes LlamaIndex/HuggingFace)"; \
+            pip install -r requirements-local.txt; \
+            ;; \
+        full) \
+            echo "Full Mode: Installing all dependencies"; \
+            pip install -r requirements-full.txt; \
+            ;; \
+        ci) \
+            echo "CI Mode: Installing test dependencies without heavy ML"; \
+            pip install -r requirements-ci.txt; \
+            ;; \
+        *) \
+            echo "Unknown BUILD_MODE: $BUILD_MODE, defaulting to bedrock"; \
+            pip install -r requirements-bedrock.txt; \
+            ;; \
+    esac
 
 # Copy application code
 COPY . .
