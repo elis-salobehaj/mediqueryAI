@@ -43,15 +43,22 @@ logger = logging.getLogger(__name__)
 # Models
 class QueryRequest(BaseModel):
     question: str
-    model_id: str = "gemma-3-27b-it" # Default to High Quota model 
+    model_id: str = "gemma-3-27b-it" # Default to High Quota model
+    fast_mode: bool = False  # Skip plan construction for simple queries
+    multi_agent: bool = False  # Use LangGraph multi-agent workflow for complex queries
 
 class QueryResponse(BaseModel):
     sql: str
     data: dict
     insight: str
     visualization_type: str = "table" # 'bar', 'pie', 'line', 'scatter', 'map', 'table'
-    error: str = None
-    meta: dict = None
+    error: str | None = None
+    meta: dict | None = None
+    attempts: int = 1  # Number of SQL generation attempts
+    reflections: list[str] = []  # Self-critiques from failed attempts
+    query_plan: str | None = None  # Natural language query plan
+    agent_mode: str = "single"  # "single" or "multi"
+    agents_used: list[str] | None = None  # e.g., ["schema_navigator", "sql_writer", "critic"]
 
 class Token(BaseModel):
     access_token: str
@@ -152,7 +159,7 @@ async def health_check():
     from datetime import datetime
     return {
         "status": "healthy",
-        "service": "antigravity-backend",
+        "service": "mediquery-ai-backend",
         "timestamp": datetime.now().isoformat(),
         "tables": db_service.get_schema().count("Table:")
     }
@@ -199,7 +206,7 @@ async def get_history(current_user: dict = Depends(get_current_user)):
     return {"messages": messages}
 
 @app.post("/query", response_model=QueryResponse)
-def query_data(request: QueryRequest = Body(...), current_user: dict = Depends(get_current_user)):
+async def query_data(request: QueryRequest = Body(...), current_user: dict = Depends(get_current_user)):
     try:
         # 1. Save User Message (Include Username)
         chat_history.add_message(role="user", content=request.question, metadata={"user": current_user['username']})
@@ -215,15 +222,108 @@ def query_data(request: QueryRequest = Body(...), current_user: dict = Depends(g
         # 3. Get Schema
         schema = db_service.get_schema()
 
-        # 4. Generate SQL (Pass model_id)
+        # 4. Set Model
         if request.model_id:
             llm_agent.set_model(request.model_id)
 
         # Get recent history for context (last 5 messages)
         recent_history = chat_history.get_recent_messages(hours=24)
         
-        sql_query = llm_agent.generate_sql(request.question, schema, history=recent_history)
+        # 5. HYBRID ROUTING: Multi-Agent vs Single-Agent
+        if request.multi_agent:
+            # Use LangGraph multi-agent workflow for complex queries
+            logger.info(f"Routing to multi-agent workflow for user {current_user['username']}")
+            
+            try:
+                from services.langgraph_agent import MultiAgentSQLGenerator
+                
+                multi_agent = MultiAgentSQLGenerator(
+                    database_service=db_service,
+                    llm_agent=llm_agent
+                )
+                
+                multi_result = await multi_agent.ainvoke(
+                    query=request.question,
+                    username=current_user['username']
+                )
+                
+                # Extract results from multi-agent workflow
+                sql_query = multi_result.get("sql")
+                results = multi_result.get("data")
+                retry_error = multi_result.get("error")
+                attempts = multi_result.get("attempts", 1)
+                reflections = multi_result.get("reflections", [])
+                query_plan = multi_result.get("query_plan")  # Multi-agent may not have query_plan
+                agent_mode = "multi"
+                agents_used = multi_result.get("agents_used", [])
+                thoughts = multi_result.get("thoughts", [])
+                
+            except Exception as e:
+                logger.error(f"Multi-agent workflow failed: {e}", exc_info=True)
+                # Fallback to single-agent
+                logger.info("Falling back to single-agent workflow")
+                request.multi_agent = False
+                retry_result = llm_agent.generate_sql_with_retry(
+                    user_query=request.question,
+                    schema_str=schema,
+                    db_service=db_service,
+                    history=recent_history,
+                    fast_mode=request.fast_mode,
+                    max_retries=3,
+                    timeout_seconds=60
+                )
+                sql_query = retry_result.get("sql")
+                results = None
+                retry_error = retry_result.get("error")
+                attempts = retry_result.get("attempts", 1)
+                reflections = retry_result.get("reflections", [])
+                agent_mode = "single"
+                agents_used = None
+                thoughts = llm_agent.last_thoughts
+                query_plan = retry_result.get("query_plan")
+        else:
+            # Use existing single-agent reflexion loop
+            retry_result = llm_agent.generate_sql_with_retry(
+                user_query=request.question,
+                schema_str=schema,
+                db_service=db_service,
+                history=recent_history,
+                fast_mode=request.fast_mode,
+                max_retries=3,
+                timeout_seconds=60
+            )
+            sql_query = retry_result.get("sql")
+            results = None
+            retry_error = retry_result.get("error")
+            attempts = retry_result.get("attempts", 1)
+            reflections = retry_result.get("reflections", [])
+            query_plan = retry_result.get("query_plan")
+            agent_mode = "single"
+            agents_used = None
+            thoughts = llm_agent.last_thoughts
         
+        # Handle retry failures (common for both paths)
+        if (request.multi_agent and retry_error) or (not request.multi_agent and not retry_result.get("success")) or not sql_query:
+            error_msg = retry_error or "Failed to generate valid SQL query"
+            chat_history.add_message(role="bot", content=f"Query generation failed: {error_msg}")
+            return QueryResponse(
+                sql=sql_query or "",
+                data={"row_count": 0, "columns": [], "data": []},
+                insight=f"I attempted to generate a query {attempts} time(s) but encountered issues: {error_msg}",
+                error=error_msg,
+                visualization_type="table",
+                attempts=attempts,
+                reflections=reflections,
+                query_plan=query_plan,
+                agent_mode=agent_mode,
+                agents_used=agents_used,
+                meta={
+                    "thoughts": thoughts,
+                    "row_count": 0
+                }
+            )
+        
+        # Handle special SQL responses (RATE_LIMIT, etc.)
         if sql_query == "RATE_LIMIT":
             chat_history.add_message(role="bot", content="Google API Rate Limit Exceeded. Please try again in a minute.")
             return QueryResponse(
@@ -231,7 +331,12 @@ def query_data(request: QueryRequest = Body(...), current_user: dict = Depends(g
                 data={"row_count": 0, "columns": [], "data": []},
                 insight="**Rate Limit Exceeded**: The Google Gemini API is temporarily blocking requests due to high traffic/quota. Please wait 1-2 minutes and try again, or switch to a local model.",
                 error="Rate Limit Exceeded",
-                visualization_type="table"
+                visualization_type="table",
+                attempts=attempts,
+                reflections=reflections,
+                query_plan=query_plan,
+                agent_mode=agent_mode,
+                agents_used=agents_used
             )
 
         if sql_query == "INVALID_KEY":
@@ -241,7 +346,12 @@ def query_data(request: QueryRequest = Body(...), current_user: dict = Depends(g
                 data={"row_count": 0, "columns": [], "data": []},
                 insight="**Configuration Error**: The Google Gemini API Key appears to be invalid or expired. Please check your `.env` file.",
                 error="Invalid API Key",
-                visualization_type="table"
+                visualization_type="table",
+                attempts=attempts,
+                reflections=reflections,
+                query_plan=query_plan,
+                agent_mode=agent_mode,
+                agents_used=agents_used
              )
         
         if sql_query and sql_query.startswith("API_ERROR"):
@@ -251,7 +361,12 @@ def query_data(request: QueryRequest = Body(...), current_user: dict = Depends(g
                 data={"row_count": 0, "columns": [], "data": []},
                 insight=f"**API Error**: {sql_query}",
                 error=sql_query,
-                visualization_type="table"
+                visualization_type="table",
+                attempts=attempts,
+                reflections=reflections,
+                query_plan=query_plan,
+                agent_mode=agent_mode,
+                agents_used=agents_used
              )
 
         if not sql_query or sql_query == "NO_MATCH":
@@ -260,38 +375,51 @@ def query_data(request: QueryRequest = Body(...), current_user: dict = Depends(g
                 sql="",
                 data={"row_count": 0, "columns": [], "data": []}, 
                 insight="I'm sorry, I couldn't find relevant data in the database to answer your question. Please try asking about patients, visits, or billing.",
-                visualization_type="table"
+                visualization_type="table",
+                attempts=attempts,
+                reflections=reflections,
+                query_plan=query_plan,
+                agent_mode=agent_mode,
+                agents_used=agents_used
             )
 
-        # 5. Execute SQL
-        try:
-            results = db_service.execute_query(sql_query)
-            if not results: results = {"row_count": 0, "columns": [], "data": []}
-        except Exception as e:
-            logger.error(f"SQL Execution Error: {e}")
-            chat_history.add_message(role="bot", content=f"Database Error: {str(e)}")
-            return QueryResponse(
-                sql=sql_query,
-                data={"row_count": 0, "columns": [], "data": []},
-                insight=f"I generated a query but it failed to execute. Error: {str(e)}",
-                error=str(e),
-                visualization_type="table"
-            )
+        # 6. Execute SQL (validation already done in retry loop or multi-agent workflow)
+        if not results:
+            try:
+                results = db_service.execute_query(sql_query)
+                if not results: results = {"row_count": 0, "columns": [], "data": []}
+            except Exception as e:
+                logger.error(f"SQL Execution Error: {e}")
+                chat_history.add_message(role="bot", content=f"Database Error: {str(e)}")
+                return QueryResponse(
+                    sql=sql_query,
+                    data={"row_count": 0, "columns": [], "data": []},
+                    insight=f"I generated a query but it failed to execute. Error: {str(e)}",
+                    error=str(e),
+                    visualization_type="table",
+                    attempts=attempts,
+                    reflections=reflections,
+                    query_plan=query_plan,
+                    agent_mode=agent_mode,
+                    agents_used=agents_used
+                )
 
-        # 6. Determine Visualization Type
+        # 7. Determine Visualization Type
         vis_type = llm_agent.determine_visualization(request.question, results)
 
-        # 7. Generate Insight
+        # 8. Generate Insight
         insight = llm_agent.generate_insight(request.question, results, history=recent_history)
         
-        # 8. Save Bot Response
+        # 9. Save Bot Response
         chat_history.add_message(
             role="bot", 
             content=insight, 
             metadata={
                 "sql": sql_query,
                 "data": results,
-                "visualization_type": vis_type
+                "visualization_type": vis_type,
+                "attempts": attempts,
+                "query_plan": query_plan
             }
         )
 
@@ -300,8 +428,13 @@ def query_data(request: QueryRequest = Body(...), current_user: dict = Depends(g
             data=results,
             insight=insight,
             visualization_type=vis_type,
+            attempts=attempts,
+            reflections=reflections,
+            query_plan=query_plan,
+            agent_mode=agent_mode,
+            agents_used=agents_used,
             meta={
-                "thoughts": llm_agent.last_thoughts,
+                "thoughts": thoughts,
                 "row_count": results.get('row_count', 0)
             }
         )

@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
-import { FaRobot, FaUser, FaMicrochip, FaDatabase, FaChevronUp } from 'react-icons/fa';
+import { FaRobot, FaUser, FaMicrochip, FaDatabase, FaChevronUp, FaDownload } from 'react-icons/fa';
 import { getApiUrl } from '../config/api';
 
 import type { Message } from '../App';
 import clsx from 'clsx';
 import PlotlyVisualizer from './PlotlyVisualizer';
+import { exportToCSV } from '../utils/export';
 
 interface ChatBoxProps {
   messages: Message[];
@@ -68,7 +69,27 @@ const ChatBox: React.FC<ChatBoxProps> = ({ messages, setMessages }) => {
   const [loading, setLoading] = useState(false);
   const [models, setModels] = useState<Array<{ id: string, name: string }>>([]);
   const [selectedModel, setSelectedModel] = useState('');
+  const [fastMode, setFastMode] = useState(() => {
+    // Load from localStorage
+    const saved = localStorage.getItem('fastMode');
+    return saved === 'true';
+  });
+  const [multiAgent, setMultiAgent] = useState(() => {
+    // Load from localStorage
+    const saved = localStorage.getItem('multiAgent');
+    return saved === 'true';
+  });
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Save fastMode to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('fastMode', String(fastMode));
+  }, [fastMode]);
+
+  // Save multiAgent to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('multiAgent', String(multiAgent));
+  }, [multiAgent]);
 
   // Fetch models on mount
   useEffect(() => {
@@ -105,7 +126,9 @@ const ChatBox: React.FC<ChatBoxProps> = ({ messages, setMessages }) => {
     try {
       const response = await axios.post(getApiUrl('/query'), {
         question: userMsg.text,
-        model_id: selectedModel
+        model_id: selectedModel,
+        fast_mode: fastMode,
+        multi_agent: multiAgent
       });
 
       const resData = response.data;
@@ -201,10 +224,30 @@ const ChatBox: React.FC<ChatBoxProps> = ({ messages, setMessages }) => {
 
               {/* Visuals */}
               {msg.sender === 'bot' && msg.data && (
-                <PlotlyVisualizer
-                  data={msg.data}
-                  visualizationType={msg.visualization_type || 'table'}
-                />
+                <div className="mt-4">
+                  {/* Export CSV Button */}
+                  <div className="mb-3 flex justify-end">
+                    <button
+                      onClick={() => {
+                        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+                        exportToCSV(
+                          msg.data.data,
+                          msg.data.columns,
+                          `mediquery-export-${timestamp}`
+                        );
+                      }}
+                      className="text-xs font-mono px-3 py-1.5 bg-[#00F0FF]/10 border border-[#00F0FF]/30 text-[#00F0FF] hover:bg-[#00F0FF]/20 hover:border-[#00F0FF]/50 transition-all duration-200 rounded flex items-center gap-2 shadow-[0_0_10px_rgba(0,240,255,0.1)] hover:shadow-[0_0_15px_rgba(0,240,255,0.3)]"
+                    >
+                      <FaDownload className="text-[10px]" />
+                      <span>EXPORT_CSV</span>
+                    </button>
+                  </div>
+                  
+                  <PlotlyVisualizer
+                    data={msg.data}
+                    visualizationType={msg.visualization_type || 'table'}
+                  />
+                </div>
               )}
 
               {/* SQL Log */}
@@ -237,12 +280,53 @@ const ChatBox: React.FC<ChatBoxProps> = ({ messages, setMessages }) => {
             _READY_FOR_INPUT
           </div>
 
-          {/* Custom Futuristic Selector */}
-          <CustomSelect
-            value={selectedModel}
-            onChange={setSelectedModel}
-            options={models.length > 0 ? models : MODELS}
-          />
+          <div className="flex items-center gap-4">
+            {/* Fast Mode Toggle */}
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <span className="text-[#00F0FF] opacity-70 text-xs font-mono group-hover:opacity-100 transition-opacity">
+                {fastMode ? '⚡ FAST' : '🧠 THINKING'}
+              </span>
+              <div 
+                className={`relative w-10 h-5 rounded-full transition-all duration-300 ${
+                  fastMode ? 'bg-[#00F0FF]/30' : 'bg-white/10'
+                } border border-[#00F0FF]/30`}
+                onClick={() => setFastMode(!fastMode)}
+              >
+                <div 
+                  className={`absolute top-0.5 w-4 h-4 rounded-full bg-[#00F0FF] shadow-[0_0_10px_rgba(0,240,255,0.5)] transition-all duration-300 ${
+                    fastMode ? 'right-0.5' : 'left-0.5'
+                  }`}
+                />
+              </div>
+            </label>
+
+            {/* Multi-Agent Toggle */}
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <span className="text-[#FF00AA] opacity-70 text-xs font-mono group-hover:opacity-100 transition-opacity">
+                {multiAgent ? '🤖 MULTI_AGENT' : '🤖 SINGLE_AGENT'}
+              </span>
+              <div 
+                className={`relative w-10 h-5 rounded-full transition-all duration-300 ${
+                  multiAgent ? 'bg-[#FF00AA]/30' : 'bg-white/10'
+                } border border-[#FF00AA]/30`}
+                onClick={() => setMultiAgent(!multiAgent)}
+                title="Multi-Agent Mode: Uses specialized AI agents for complex queries. Slower but more accurate for large schemas."
+              >
+                <div 
+                  className={`absolute top-0.5 w-4 h-4 rounded-full bg-[#FF00AA] shadow-[0_0_10px_rgba(255,0,170,0.5)] transition-all duration-300 ${
+                    multiAgent ? 'right-0.5' : 'left-0.5'
+                  }`}
+                />
+              </div>
+            </label>
+
+            {/* Custom Futuristic Selector */}
+            <CustomSelect
+              value={selectedModel}
+              onChange={setSelectedModel}
+              options={models.length > 0 ? models : MODELS}
+            />
+          </div>
         </div>
 
         <div className="hud-input-group">

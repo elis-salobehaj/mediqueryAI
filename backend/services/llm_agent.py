@@ -1,17 +1,40 @@
-from google import genai
-from google.genai import types
-from google.api_core import exceptions
-import ollama
 import anthropic
 import os
-import logging
-from typing import Optional, Dict, Any
-
 import logging
 from typing import Optional, Dict, Any, List
 import json
 
 logger = logging.getLogger(__name__)
+
+# Conditional Google GenAI Import
+try:
+    from google import genai
+    from google.genai import types
+    from google.api_core import exceptions
+    HAS_GOOGLE_GENAI = True
+except ImportError:
+    logger.warning("google-genai not available. Google GenAI features disabled.")
+    HAS_GOOGLE_GENAI = False
+    genai = None
+    types = None
+    exceptions = None
+
+# Conditional Ollama Import
+try:
+    import ollama
+    HAS_OLLAMA = True
+except ImportError:
+    logger.warning("ollama not available. Local model features disabled.")
+    HAS_OLLAMA = False
+    ollama = None
+
+# Conditional Bedrock Import
+try:
+    from langchain_aws import ChatBedrockConverse
+    HAS_BEDROCK = True
+except ImportError:
+    logger.warning("langchain-aws not available. Bedrock features disabled.")
+    HAS_BEDROCK = False
 
 # Conditional LlamaIndex Imports
 try:
@@ -34,31 +57,60 @@ class LLMAgent:
         self.use_local = os.getenv('USE_LOCAL_MODEL', 'false').lower() == 'true'
         self.local_model = os.getenv('LOCAL_MODEL_NAME', 'qwen3:latest')
         self.ollama_host = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
+        self.use_bedrock = os.getenv('USE_BEDROCK', 'false').lower() == 'true'
+        self.bedrock_region = os.getenv('AWS_BEDROCK_REGION', 'us-west-2')
+        self.bedrock_sql_writer = os.getenv('BEDROCK_SQL_WRITER_MODEL', 'anthropic.claude-3-5-sonnet-20241022-v2:0')
+        self.bedrock_navigator = os.getenv('BEDROCK_NAVIGATOR_MODEL', 'anthropic.claude-3-5-haiku-20241022-v1:0')
+        self.bedrock_critic = os.getenv('BEDROCK_CRITIC_MODEL', 'anthropic.claude-3-5-haiku-20241022-v1:0')
+        self.bedrock_client = None
         self.last_thoughts = []
         
-        # Safety Settings - Block None for medical data analysis
-        # Safety Settings - Block None for medical data analysis
-        self.safety_settings = [
-            types.SafetySetting(
-                category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
-                threshold=types.HarmBlockThreshold.BLOCK_NONE,
-            ),
-            types.SafetySetting(
-                category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-                threshold=types.HarmBlockThreshold.BLOCK_NONE,
-            ),
-            types.SafetySetting(
-                category=types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-                threshold=types.HarmBlockThreshold.BLOCK_NONE,
-            ),
-            types.SafetySetting(
-                category=types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-                threshold=types.HarmBlockThreshold.BLOCK_NONE,
-            ),
-        ]
+        # Multi-Tenant Isolation: Query plan cache will be keyed by (username, query_hash) in Phase 3
+        # Current isolation: Chat history tracks username in metadata (see chat_history.add_message)
+        self.query_plan_cache = {}  # Placeholder for Phase 3 caching
+        
+        # Safety Settings - Block None for medical data analysis (only for Google GenAI)
+        if HAS_GOOGLE_GENAI and types:
+            self.safety_settings = [
+                types.SafetySetting(
+                    category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                types.SafetySetting(
+                    category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                types.SafetySetting(
+                    category=types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                types.SafetySetting(
+                    category=types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+            ]
+        else:
+            self.safety_settings = []
         
         if self.use_local:
             logger.info(f"Using local Ollama model: {self.local_model}")
+        elif self.use_bedrock and HAS_BEDROCK:
+            # Initialize Bedrock client for single agent mode
+            try:
+                bedrock_token = os.getenv('AWS_BEARER_TOKEN_BEDROCK')
+                if bedrock_token:
+                    # boto3 auto-detects AWS_BEARER_TOKEN_BEDROCK env var
+                    self.bedrock_client = ChatBedrockConverse(
+                        model_id=self.bedrock_sql_writer,
+                        region_name=self.bedrock_region,
+                        temperature=0.0,
+                    )
+                    logger.info(f"Using AWS Bedrock model: {self.bedrock_sql_writer}")
+                else:
+                    logger.warning("AWS_BEARER_TOKEN_BEDROCK not set. Bedrock features disabled.")
+            except Exception as e:
+                logger.error(f"Failed to initialize Bedrock client: {e}")
+                self.bedrock_client = None
         else:
             if self.anthropic_key:
                 self.anthropic_client = anthropic.Anthropic(api_key=self.anthropic_key)
@@ -123,6 +175,10 @@ class LLMAgent:
         if self.use_local:
             logger.info("Local model mode enabled - API key not required")
             return
+        
+        if not HAS_GOOGLE_GENAI or not genai:
+            logger.warning("Google GenAI not available. Skipping API key configuration.")
+            return
             
         self.api_key = api_key
         # genai.configure(api_key=self.api_key) # Old way
@@ -139,6 +195,22 @@ class LLMAgent:
                 {"id": "sqlcoder:7b", "name": "Defog SQLCoder (7B)"},
                 {"id": "llama3.1", "name": "Llama 3.1 (8B)"},
                 {"id": "qwen3:latest", "name": "Qwen 3 (7B)"},
+            ]
+        elif self.use_bedrock:
+            # Return Bedrock models with user-friendly names
+            return [
+                {
+                    "id": self.bedrock_sql_writer,
+                    "name": "Claude 3.5 Sonnet v2 (SQL Writer) - RECOMMENDED"
+                },
+                {
+                    "id": self.bedrock_navigator,
+                    "name": "Claude 3.5 Haiku (Schema Navigator)"
+                },
+                {
+                    "id": self.bedrock_critic,
+                    "name": "Claude 3.5 Haiku (Critic)"
+                },
             ]
         else:
             return [
@@ -159,6 +231,12 @@ class LLMAgent:
                 logger.warning(f"Attempted to switch to unsupported local model: {model_id}. Keeping {self.local_model}")
             return
 
+        # Handle Bedrock Models
+        if self.use_bedrock and 'anthropic' in model_id:
+            self.model = model_id
+            logger.info(f"Switched Bedrock model to: {model_id}")
+            return
+
         # Handle Anthropic Models
         if 'claude' in model_id:
             if not self.anthropic_client:
@@ -177,6 +255,9 @@ class LLMAgent:
 
     def _call_ollama(self, prompt: str) -> str:
         """Call local Ollama model."""
+        if not HAS_OLLAMA or not ollama:
+            raise ValueError("Ollama not available. Install with: pip install ollama")
+        
         try:
             response = ollama.chat(
                 model=self.local_model,
@@ -213,6 +294,31 @@ class LLMAgent:
             return message.content[0].text
         except Exception as e:
             logger.error(f"Anthropic API call failed: {e}")
+            raise e
+
+    def _call_bedrock(self, prompt: str) -> str:
+        """Call AWS Bedrock API using ChatBedrockConverse."""
+        if not self.bedrock_client:
+            raise ValueError("Bedrock client not initialized. Check AWS_BEARER_TOKEN_BEDROCK in .env")
+        
+        try:
+            from langchain_core.messages import HumanMessage
+            
+            # Use the current model if set, otherwise default to SQL writer
+            model_id = self.model if isinstance(self.model, str) and 'anthropic' in self.model else self.bedrock_sql_writer
+            
+            # Update client model if needed
+            if self.bedrock_client.model_id != model_id:
+                self.bedrock_client = ChatBedrockConverse(
+                    model_id=model_id,
+                    region_name=self.bedrock_region,
+                    temperature=0.0,
+                )
+            
+            response = self.bedrock_client.invoke([HumanMessage(content=prompt)])
+            return response.content
+        except Exception as e:
+            logger.error(f"Bedrock API call failed: {e}")
             raise e
 
     def generate_sql(self, user_query: str, schema_str: str, history: list = None) -> Optional[str]:
@@ -298,16 +404,23 @@ Rules:
 User Request: {user_query}
 """
         logger.debug(f"Generating SQL with model: {self.model}")
-        self.last_thoughts.append(f"Selected Model: {self.local_model if self.use_local else 'Cloud API'}")
+        model_display = self.local_model if self.use_local else ('Bedrock' if self.use_bedrock else 'Cloud API')
+        self.last_thoughts.append(f"Selected Model: {model_display}")
         self.last_thoughts.append("Generating SQL query...")
         try:
             if self.use_local:
                 sql = self._call_ollama(prompt)
+            elif self.use_bedrock and self.bedrock_client:
+                # AWS Bedrock Case
+                sql = self._call_bedrock(prompt)
             elif isinstance(self.model, str) and 'claude' in self.model: 
                 # Anthropic Case
                 sql = self._call_anthropic(prompt)
             else:
                 # Google Gemini Case
+                if not HAS_GOOGLE_GENAI or not genai:
+                    raise ValueError("Google GenAI not available. Install with: pip install google-genai")
+                
                 if not hasattr(self, 'client') or not self.client:
                      # Re-init default if needed
                      if self.api_key:
@@ -374,9 +487,14 @@ User Request: {user_query}
         try:
             if self.use_local:
                 return self._call_ollama(prompt)
+            elif self.use_bedrock and self.bedrock_client:
+                return self._call_bedrock(prompt)
             elif isinstance(self.model, str) and 'claude' in self.model:
                 return self._call_anthropic(prompt)
             else:
+                if not HAS_GOOGLE_GENAI or not genai:
+                    return "Analyzed data (GenAI not available for detailed insights)."
+                
                 if not hasattr(self, 'client') or not self.client:
                      self.client = genai.Client(api_key=self.api_key)
                 
@@ -387,9 +505,9 @@ User Request: {user_query}
                     config=types.GenerateContentConfig(safety_settings=self.safety_settings)
                 )
                 return response.text.strip()
-        except exceptions.ResourceExhausted:
-            return "Analyzed data, but couldn't generate detailed insight due to API rate limits (quota exceeded)."
         except Exception as e:
+            if HAS_GOOGLE_GENAI and exceptions and isinstance(e, exceptions.ResourceExhausted):
+                return "Analyzed data, but couldn't generate detailed insight due to API rate limits (quota exceeded)."
             logger.error(f"Insight generation failed: {e}")
             return "I have the data but couldn't generate a summary insight."
 
@@ -552,5 +670,276 @@ Return ONLY the chart type name (lowercase, no explanation).
         except Exception as e:
             logger.error(f"Vis Type determination failed: {e}")
             return "table"
+
+    def generate_query_plan(self, user_query: str, schema_str: str) -> str:
+        """
+        Stage 2: Plan Construction - Generates a natural language query plan before SQL generation.
+        
+        Returns a step-by-step plan explaining what the SQL query should do.
+        """
+        self.last_thoughts.append("Generating query plan...")
+        
+        prompt = f"""
+You are a database query planner. Given the user's request and database schema, create a step-by-step plan (in natural language) for how to construct the SQL query.
+
+Database Schema:
+{schema_str}
+
+User Request: {user_query}
+
+Create a concise plan with 2-5 steps that explains:
+1. Which tables to use
+2. How to join them (if needed)
+3. What filters to apply
+4. What to select/aggregate
+5. Any ordering or grouping needed
+
+Example format:
+"Step 1: Query the patients table to get patient demographics.
+Step 2: Join with visits table on patient_id to access visit diagnoses.
+Step 3: Filter for records where diagnosis contains 'diabetes' (case-insensitive).
+Step 4: Select patient names and visit dates.
+Step 5: Order by visit date descending."
+
+Return ONLY the plan steps, no additional commentary.
+"""
+        
+        try:
+            if self.use_local:
+                plan = self._call_ollama(prompt)
+            elif isinstance(self.model, str) and 'claude' in self.model:
+                plan = self._call_anthropic(prompt)
+            else:
+                if not HAS_GOOGLE_GENAI or not genai:
+                    return "Step 1: Query the database (GenAI not available for detailed planning)."
+                
+                if not hasattr(self, 'client') or not self.client:
+                    self.client = genai.Client(api_key=self.api_key)
+                
+                target_model = self.model if isinstance(self.model, str) else 'gemini-1.5-flash'
+                response = self.client.models.generate_content(
+                    model=target_model,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(safety_settings=self.safety_settings)
+                )
+                plan = response.text.strip()
+            
+            self.last_thoughts.append(f"Query Plan: {plan}")
+            return plan
+            
+        except Exception as e:
+            logger.error(f"Query plan generation failed: {e}")
+            return "Unable to generate query plan - proceeding with direct SQL generation"
+
+    def reflect_on_error(self, failed_sql: str, error_msg: str, user_query: str, query_plan: str = None) -> str:
+        """
+        Reflexion: Analyzes why a SQL query failed and suggests corrections.
+        
+        Returns a verbal critique and suggested fix.
+        """
+        self.last_thoughts.append(f"Reflecting on error: {error_msg[:100]}...")
+        
+        plan_context = f"\nOriginal Query Plan:\n{query_plan}\n" if query_plan else ""
+        
+        prompt = f"""
+You are a SQL debugging expert. A query failed and you need to analyze why and suggest a fix.
+
+User's Original Request: {user_query}
+{plan_context}
+Failed SQL Query:
+{failed_sql}
+
+Error Message:
+{error_msg}
+
+Analyze what went wrong and provide:
+1. A brief explanation of the error (1-2 sentences)
+2. What specifically needs to be corrected
+
+Be concise and actionable. Return your analysis as plain text.
+"""
+        
+        try:
+            if self.use_local:
+                reflection = self._call_ollama(prompt)
+            elif isinstance(self.model, str) and 'claude' in self.model:
+                reflection = self._call_anthropic(prompt)
+            else:
+                if not HAS_GOOGLE_GENAI or not genai:
+                    return "Unable to reflect on SQL error (GenAI not available)."
+                
+                if not hasattr(self, 'client') or not self.client:
+                    self.client = genai.Client(api_key=self.api_key)
+                
+                target_model = self.model if isinstance(self.model, str) else 'gemini-1.5-flash'
+                response = self.client.models.generate_content(
+                    model=target_model,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(safety_settings=self.safety_settings)
+                )
+                reflection = response.text.strip()
+            
+            return reflection
+            
+        except Exception as e:
+            logger.error(f"Reflection generation failed: {e}")
+            return f"Error analysis unavailable. Original error: {error_msg}"
+
+    def generate_sql_with_retry(
+        self,
+        user_query: str,
+        schema_str: str,
+        db_service,
+        history: list = None,
+        fast_mode: bool = False,
+        max_retries: int = 3,
+        timeout_seconds: int = 60
+    ) -> dict:
+        """
+        Stage 4: Reflexion Loop - Generates SQL with self-correction retry mechanism.
+        
+        Returns:
+            dict with keys:
+                - sql (str | None): Final SQL query
+                - success (bool): True if query validated successfully
+                - attempts (int): Number of attempts made
+                - reflections (list[str]): Self-critiques from failed attempts
+                - query_plan (str | None): Natural language query plan
+                - error (str | None): Final error message if all attempts failed
+        """
+        import time
+        
+        start_time = time.time()
+        attempts = []
+        reflections = []
+        query_plan = None
+        
+        # Stage 2: Plan Construction (skip if fast_mode)
+        if not fast_mode:
+            try:
+                query_plan = self.generate_query_plan(user_query, schema_str)
+            except Exception as e:
+                logger.warning(f"Plan generation failed, continuing without plan: {e}")
+                self.last_thoughts.append("Plan generation failed - using direct SQL generation")
+        else:
+            self.last_thoughts.append("Fast mode enabled - skipping plan construction")
+        
+        # Stage 3 & 4: SQL Generation with Reflexion Loop
+        for attempt_num in range(max_retries):
+            # Check timeout
+            if time.time() - start_time > timeout_seconds:
+                error_msg = f"Query exceeded {timeout_seconds}s timeout after {attempt_num + 1} attempts"
+                self.last_thoughts.append(error_msg)
+                return {
+                    "sql": None,
+                    "success": False,
+                    "attempts": attempt_num + 1,
+                    "reflections": reflections,
+                    "query_plan": query_plan,
+                    "error": error_msg
+                }
+            
+            self.last_thoughts.append(f"Attempt {attempt_num + 1}/{max_retries}")
+            
+            # Generate SQL (with plan context if available)
+            if query_plan and not fast_mode:
+                # Enhance the prompt with the plan
+                enhanced_history = (history or []) + [{
+                    "role": "system",
+                    "text": f"Query Plan: {query_plan}"
+                }]
+                sql = self.generate_sql(user_query, schema_str, enhanced_history)
+            else:
+                sql = self.generate_sql(user_query, schema_str, history)
+            
+            if not sql or sql in ["NO_MATCH", "RATE_LIMIT", "INVALID_KEY"] or sql.startswith("API_ERROR"):
+                error_msg = f"SQL generation failed: {sql}"
+                attempts.append({"sql": sql, "error": error_msg})
+                return {
+                    "sql": None,
+                    "success": False,
+                    "attempts": attempt_num + 1,
+                    "reflections": reflections,
+                    "query_plan": query_plan,
+                    "error": error_msg
+                }
+            
+            # Validate SQL
+            validation = db_service.validate_sql(sql)
+            attempts.append({"sql": sql, "validation": validation})
+            
+            # Check if valid and passes sanity checks
+            if validation["valid"]:
+                row_count = validation.get("row_count", 0)
+                warnings = validation.get("warnings", [])
+                
+                # Success criteria: valid SQL with reasonable row count
+                if row_count > 0 and row_count <= 10000:
+                    self.last_thoughts.append(f"✓ Query validated successfully ({row_count} rows)")
+                    if warnings:
+                        self.last_thoughts.append(f"Warnings: {', '.join(warnings)}")
+                    return {
+                        "sql": sql,
+                        "success": True,
+                        "attempts": attempt_num + 1,
+                        "reflections": reflections,
+                        "query_plan": query_plan,
+                        "error": None
+                    }
+                
+                # Query is valid but has issues (0 rows or too many rows)
+                if row_count == 0:
+                    issue = "Query returns 0 rows - may need different filters or table"
+                elif row_count > 10000:
+                    issue = f"Query returns {row_count} rows - may need additional filters"
+                else:
+                    issue = "Query validation concern"
+                
+                self.last_thoughts.append(f"⚠ {issue}")
+                
+                # If this is the last attempt, return it anyway since it's syntactically valid
+                if attempt_num == max_retries - 1:
+                    self.last_thoughts.append("Final attempt - accepting query despite warnings")
+                    return {
+                        "sql": sql,
+                        "success": True,
+                        "attempts": attempt_num + 1,
+                        "reflections": reflections,
+                        "query_plan": query_plan,
+                        "error": None
+                    }
+                
+                # Try to improve the query
+                error_msg = issue
+            else:
+                # SQL is invalid
+                error_msg = validation.get("error", "Unknown validation error")
+                self.last_thoughts.append(f"✗ Validation failed: {error_msg[:100]}")
+            
+            # Reflect on the error and try again (unless this was the last attempt)
+            if attempt_num < max_retries - 1:
+                reflection = self.reflect_on_error(sql, error_msg, user_query, query_plan)
+                reflections.append(reflection)
+                self.last_thoughts.append(f"Reflection: {reflection[:150]}...")
+                
+                # Add reflection to history for next attempt
+                if not history:
+                    history = []
+                history.append({
+                    "role": "system",
+                    "text": f"Previous attempt failed: {error_msg}. Reflection: {reflection}"
+                })
+        
+        # All attempts failed
+        final_error = f"Failed after {max_retries} attempts. Last error: {error_msg}"
+        self.last_thoughts.append(final_error)
+        return {
+            "sql": None,
+            "success": False,
+            "attempts": max_retries,
+            "reflections": reflections,
+            "query_plan": query_plan,
+            "error": final_error
+        }
 
 llm_agent = LLMAgent()
