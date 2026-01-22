@@ -56,6 +56,8 @@ This will:
 
 ## Features
 
+### Core Capabilities
+
 - 🤖 **Natural Language Queries**: Ask questions in plain English about healthcare data
 - 📊 **60+ Interactive Visualizations**: Powered by Plotly.js with real-time chart type switching
 - 🧠 **Explainable AI**: View the agent's step-by-step thinking process and SQL generation logic
@@ -67,33 +69,71 @@ This will:
 - 🐳 **Docker Ready**: One-command deployment with Docker Compose
 - 🧩 **Smart Schema Inference**: Auto-detects demographics vs. illness queries to optimize SQL joins (e.g. searching both 'chronic_conditions' and 'diagnosis' for ambiguous medical terms)
 
+### Phase 1 Features (NEW) 🆕
+
+- 📥 **CSV Export**: Download query results with proper formatting, handles special characters (commas, quotes, newlines)
+- 🔄 **SQL Reflexion Loop**: Self-correcting SQL generation with up to 3 retry attempts and error analysis
+- ⚡ **Fast/Thinking Toggle**: Choose between fast responses (3-5s) or detailed reasoning (8-12s)
+- 🏢 **Multi-Tenant Ready**: User isolation infrastructure prepared for organization-level caching
+- 🛡️ **Robust Validation**: Handles trailing semicolons, validates row counts, warns on edge cases
+- 📈 **Query Planning**: Natural language execution plans generated before SQL (in Thinking Mode)
+- 🔍 **Self-Reflection**: AI analyzes failed queries and suggests corrections automatically
+
+### Multi-Agent System (Latest) 🌟
+
+- 🤖 **LangGraph Workflow**: Specialized agents for complex queries (50+ tables)
+- 🧭 **Schema Navigator**: Intelligently selects relevant tables using semantic search
+- ✍️ **SQL Writer**: Generates optimized SQL with context-aware query planning
+- 🔬 **Critic Agent**: Cross-model validation for higher accuracy (different LLM perspective)
+- 🔁 **Reflection Loop**: Automatic error analysis and SQL refinement
+- 🎛️ **User Toggle**: Switch between single-agent (fast) and multi-agent (thorough) modes
+- 🏠 **Local-First**: Defaults to Ollama models (qwen2.5-coder, sqlcoder, llama3.1)
+
 ## 🧪 Testing
 
-We provide two dedicated test suites running in isolated Docker containers:
+We provide comprehensive test coverage for all features including Phase 1 functionality:
 
-### CI Tests (Fast - Unit & Component)
+### Quick Test Commands
+
 ```bash
-# Linux/Mac
-./run-ci.sh
+# Run all Phase 1 tests (15 tests)
+docker exec mediquery-ai-backend python -m pytest /app/tests/test_phase1.py -v
 
-# Windows
-.\run-ci.ps1
+# Run all backend tests
+docker exec mediquery-ai-backend python -m pytest /app/tests/ -v
+
+# CI Tests (Fast - Unit & Component)
+./run-ci.sh       # Linux/Mac
+.\run-ci.ps1      # Windows
+
+# E2E Tests (Full Stack Integration)
+./run-e2e.sh      # Linux/Mac
+.\run-e2e.ps1     # Windows
 ```
-Runs isolated unit and component tests (~30 seconds):
-- ✅ 13 backend unit tests (pytest)
-- ✅ 10 frontend component tests (Playwright)
 
-### E2E Tests (Full Stack Integration)
-```bash
-# Linux/Mac
-./run-e2e.sh
+### Test Coverage
 
-# Windows
-.\run-e2e.ps1
-```
-Runs full-stack integration tests (~2-3 minutes):
-- ✅ End-to-end user flows (Playwright)
-- ✅ Tests against real backend + frontend
+**Backend Unit Tests** (37 total):
+- ✅ SQL Validation (7 tests) - semicolon handling, edge cases
+- ✅ Reflexion Loop (5 tests) - query planning, error reflection, retry mechanism
+- ✅ Multi-Agent LangGraph (8 tests) - workflow, state management, agent coordination
+- ✅ Authentication (5 tests) - JWT, login, authorization
+- ✅ Configuration (2 tests) - model selection, environment setup
+- ✅ Data Structures (1 test) - CSV export readiness
+- ✅ Multi-Tenant (2 tests) - user isolation, cache structure
+- ✅ Semantic Search (2 tests) - table retrieval, context awareness
+- ✅ Visualization (1 test) - chart type selection
+- ✅ Context Management (1 test) - chat history integration
+- ✅ Model Switching (1 test) - dynamic LLM selection
+- ✅ Database (1 test) - connectivity and operations
+
+**Frontend Component Tests** (10 total):
+- ✅ ChatBox, Configuration, Login, PlotlyVisualizer components
+- ✅ API integration mocks and rendering tests (Playwright)
+
+**E2E Tests** (2 total):
+- ✅ Full stack health and authentication flows
+- ✅ Guest login, configuration, chat history (Playwright)
 
 See [TESTING_GUIDE.md](TESTING_GUIDE.md) for detailed scenarios.
 
@@ -179,17 +219,24 @@ OLLAMA_HOST=http://localhost:11434
 
 ### Available Models
 
-**Local (Ollama):**
-- `qwen2.5-coder:7b` (Recommended - SOTA for SQL/Code)
-- `sqlcoder:7b` (Specialized for SQL generation)
-- `llama3.1` (General purpose reasoning)
-- `qwen3:latest` (Balanced performance)
+**Local (Ollama) - Default:**
+- `qwen2.5-coder:7b` (Schema Navigator - SOTA for SQL/Code)
+- `sqlcoder:7b` (SQL Writer - Specialized for SQL generation)
+- `llama3.1` (Critic Agent - General purpose reasoning)
+- `qwen3:latest` (Alternative - Balanced performance)
 
-
-**Cloud Models (Recommended):**
-- `gemma-3-27b-it` (High Quota / Default)
-- `gemini-2.5-flash-lite` (Fast / Efficient)
+**Cloud Models (Fallback):**
+- `gemini-1.5-flash` (Fast / Efficient - Google)
 - `claude-3-5-sonnet` (Anthropic - requires `ANTHROPIC_API_KEY`)
+- `gemma-3-27b-it` (High Quota)
+
+**Multi-Agent Configuration:**
+```bash
+# Configure agents individually (optional)
+SCHEMA_NAVIGATOR_MODEL=qwen2.5-coder:7b
+SQL_WRITER_MODEL=sqlcoder:7b
+CRITIC_MODEL=llama3.1
+```
 
 ---
 
@@ -214,12 +261,52 @@ OLLAMA_HOST=http://localhost:11434
 - "Correlation matrix of patient health metrics" → Heatmap
 - "Patient registrations over time" → Line Chart
 
+### Phase 1 Features Usage 🆕
+
+**Fast/Thinking Toggle:**
+- Located bottom-right above the input box
+- **⚡ FAST**: Skip query planning for faster responses (~3-5s)
+- **🧠 THINKING**: Generate detailed query plans for transparency (~8-12s)
+- Persists across page refreshes via localStorage
+
+**Multi-Agent Toggle:**
+- Located next to Fast/Thinking toggle
+- **🤖 SINGLE_AGENT**: Fast single-LLM approach for simple queries
+- **🤖 MULTI_AGENT**: Specialized agents for complex schemas (50+ tables)
+- Uses Schema Navigator → SQL Writer → Critic workflow
+- Automatic error reflection and retry logic
+
+**CSV Export:**
+- Appears above visualizations when data is returned
+- Click **EXPORT CSV** button to download results
+- Filename format: `mediquery-export-YYYY-MM-DD-HHmmss.csv`
+- Properly handles special characters (commas, quotes, newlines)
+
+**Query Reflection (Automatic):**
+- Failed SQL queries automatically trigger retry mechanism
+- Up to 3 attempts with AI-powered error analysis
+- View reflections and attempts in response metadata
+- Check "thoughts" section for detailed debugging info
+
+**Example Session:**
+```
+1. Toggle Fast ON (⚡) and Single-Agent
+2. Ask: "list patients by state"
+3. Wait ~3s for fast response
+4. Click "EXPORT CSV" to download
+5. Toggle to Thinking (🧠) and Multi-Agent (🤖)
+6. Ask: "complex join across billing, visits, and patients"
+7. See detailed agent thoughts: Schema Navigator → SQL Writer → Critic
+8. Wait ~15s for thorough multi-agent response with validation
+```
+
 ### Interactive Features
 
 - **Chart Type Switching**: Click any compatible visualization type above the chart
 - **Zoom & Pan**: Use Plotly's built-in controls
-- **Download**: Export charts as PNG images
+- **Download**: Export charts as PNG images or CSV data
 - **Chat History**: Conversations persist across sessions (24-hour default)
+- **Fast/Thorough Toggle**: Control query generation speed vs detail
 
 ---
 
