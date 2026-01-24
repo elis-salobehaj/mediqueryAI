@@ -14,8 +14,8 @@ Migrating to high-performance Tailwind CSS v4 architecture:
 - ✅ Phase 2.5 - Configuration & Verification
 - ✅ Phase 2.6 - User Preference Persistence
 - ✅ Phase 3 - Dynamic Theme Toggle
-- ✅ Phase 4 - Visualizer Refactor
-- ✅ Phase 5 - UX Polish (Cursors)
+- [x] Phase 4: Visualizer Refactor
+- [x] Phase 5: UX Polish (Cursors & Lingering Backgrounds)
 - [ ] Phase 6 - README & Documentation Update
 
 **Related Files**: `frontend/src/index.css`, `frontend/src/components/*`

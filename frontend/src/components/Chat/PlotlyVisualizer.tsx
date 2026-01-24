@@ -757,6 +757,8 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             geo: {
               scope: 'usa',
               projection: { type: 'albers usa' },
+              showland: true,
+              landcolor: 'transparent',
               showlakes: true,
               lakecolor: `${colors.accent1}1A`, // 1A = 10% opacity
               bgcolor: 'transparent'
@@ -797,8 +799,10 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             geo: {
               scope: 'usa',
               projection: { type: 'albers usa' },
+              showland: true,
+              landcolor: 'transparent',
               showlakes: true,
-              lakecolor: 'rgba(0, 240, 255, 0.1)',
+              lakecolor: `${colors.accent1}1A`, // 1A = 10% opacity
               bgcolor: 'transparent'
             }
           }
@@ -900,7 +904,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             scale: 2
           }
         }}
-        style={{ width: '100%' }}
+        style={{ width: '100%', backgroundColor: 'transparent' }}
         useResizeHandler={true}
       />
     </div>
