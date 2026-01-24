@@ -1,6 +1,7 @@
 // @ts-nocheck
 import React, { useMemo, useState } from 'react';
 import Plot from 'react-plotly.js';
+import { useChartColors } from '../../hooks/useChartColors';
 
 interface PlotlyVisualizerProps {
   data: any;
@@ -99,16 +100,13 @@ const getBestValueColumn = (columns: string[], rows: any[]): string | null => {
   const numericCols = columns.filter(col => typeof rows[0][col] === 'number');
   if (numericCols.length === 0) return null;
 
-  // 1. Prefer explicit metrics
-  const explicitMetric = numericCols.find(isMetricColumn);
-  if (explicitMetric) return explicitMetric;
+  // Prefer metric columns
+  const metricCols = numericCols.filter(isMetricColumn);
+  if (metricCols.length > 0) return metricCols[0];
 
-  // 2. Avoid dimensions if possible
-  const nonDimension = numericCols.find(col => !isDimensionColumn(col));
-  if (nonDimension) return nonDimension;
-
-  // 3. Fallback (but logic should handle "null" implies "Count rows")
-  return numericCols[0];
+  // Fallback to first numeric column that's not a dimension
+  const nonDimensionCols = numericCols.filter(col => !isDimensionColumn(col));
+  return nonDimensionCols.length > 0 ? nonDimensionCols[0] : numericCols[0];
 };
 
 const shouldUseRowCount = (valueCol: string | null): boolean => {
@@ -119,13 +117,8 @@ const shouldUseRowCount = (valueCol: string | null): boolean => {
 const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualizationType, theme }) => {
   const [selectedChartType, setSelectedChartType] = useState<string>(visualizationType);
 
-  // Determine current theme for Plotly
-  const isDark = useMemo(() => {
-    if (theme === 'system') {
-      return typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)').matches : true;
-    }
-    return theme === 'dark';
-  }, [theme]);
+  // Get theme-aware colors from CSS variables
+  const colors = useChartColors();
 
   // Determine compatible chart types based on data
   const compatibleChartTypes = useMemo(() => {
@@ -146,55 +139,31 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
     const columns = data.columns;
     const rows = data.data;
 
-    // Theme Palette (Centralized CSS Variables)
-    // We use getComputedStyle if we need explicit hex for logic, but for simple assignment, var() works.
-    // However, for consistency with 'palette' array which Plotly needs as explicit colors sometimes,
-    // we might stick to a static palette for the series but theme-aware for the layout.
-    // Actually, let's try strict var usage where possible.
-    const themeColors = {
-      primary: 'var(--chart-primary)',
-      text: 'var(--chart-text)',
-      bgPaper: 'var(--chart-bg-paper)',
-      bgPlot: 'var(--chart-bg-plot)',
-      grid: 'var(--chart-grid)',
-      zeroLine: 'var(--chart-grid)', // Reuse grid color
-      // Palette: We can't easily use var() in an array for 'colorway' without defining them all.
-      // Use hardcoded theme-aware palette for data series if needed, OR relies on Plotly's default which is good.
-      // But we promised 'Abyss'. Let's use a var-based palette if possible or keep the hex logic for data series only.
-      // Given the requirement for "instant switch", CSS vars are best.
-      palette: [
-        'var(--chart-primary)',
-        '#EF4444',
-        '#10B981',
-        '#F59E0B',
-        '#EC4899',
-        '#6366F1'
-      ]
-    };
-
-    // Theme Configuration
+    // Theme Configuration using OKLCH colors from hook
     const baseLayout: any = {
-      paper_bgcolor: themeColors.bgPaper,
-      plot_bgcolor: themeColors.bgPlot,
+      paper_bgcolor: 'transparent', // Let CSS handle background
+      plot_bgcolor: 'transparent',
       font: {
-        color: themeColors.text,
-        family: 'var(--font-heading)'
+        color: colors.text,
+        family: 'Inter, system-ui, sans-serif'
       },
       margin: { t: 40, r: 20, b: 60, l: 60 },
       hoverlabel: {
-        bgcolor: themeColors.bgPaper,
-        font: { color: themeColors.text, size: 12 },
-        bordercolor: themeColors.grid
+        bgcolor: colors.surfaceElevated,
+        font: { color: colors.text, size: 12 },
+        bordercolor: colors.border
       },
       xaxis: {
-        gridcolor: themeColors.grid,
-        zerolinecolor: themeColors.zeroLine,
-        tickcolor: themeColors.text
+        gridcolor: colors.borderSubtle,
+        zerolinecolor: colors.border,
+        tickcolor: colors.textMuted,
+        color: colors.text
       },
       yaxis: {
-        gridcolor: themeColors.grid,
-        zerolinecolor: themeColors.zeroLine,
-        tickcolor: themeColors.text
+        gridcolor: colors.borderSubtle,
+        zerolinecolor: colors.border,
+        tickcolor: colors.textMuted,
+        color: colors.text
       }
     };
 
@@ -285,7 +254,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             mode: 'lines',
             x: getColumn(xCol),
             y: getColumn(yCol),
-            line: { color: themeColors.primary, width: 2 }
+            line: { color: colors.brand, width: 2 }
           }],
           layout: { ...baseLayout, title: 'Line Chart', xaxis: { ...baseLayout.xaxis, title: xCol }, yaxis: { ...baseLayout.yaxis, title: yCol } }
         };
@@ -300,7 +269,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             mode: 'markers',
             x: getColumn(xCol),
             y: getColumn(yCol),
-            marker: { color: themeColors.primary, size: 8, line: { color: '#fff', width: 0.5 } }
+            marker: { color: colors.brand, size: 8, line: { color: '#fff', width: 0.5 } }
           }],
           layout: { ...baseLayout, title: 'Scatter Plot', xaxis: { ...baseLayout.xaxis, title: xCol }, yaxis: { ...baseLayout.yaxis, title: yCol } }
         };
@@ -316,8 +285,8 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             fill: 'tozeroy',
             x: getColumn(xCol),
             y: getColumn(yCol),
-            fillcolor: isDark ? 'rgba(0, 240, 255, 0.3)' : 'rgba(59, 130, 246, 0.3)',
-            line: { color: themeColors.primary, width: 2 }
+            fillcolor: `${colors.accent1}33`, // 33 = 20% opacity in hex
+            line: { color: colors.brand, width: 2 }
           }],
           layout: { ...baseLayout, title: 'Area Chart', xaxis: { ...baseLayout.xaxis, title: xCol }, yaxis: { ...baseLayout.yaxis, title: yCol } }
         };
@@ -330,8 +299,8 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
           plotData: [{
             type: 'box',
             y: getColumn(yCol),
-            marker: { color: themeColors.primary },
-            line: { color: themeColors.primary }
+            marker: { color: colors.brand },
+            line: { color: colors.brand }
           }],
           layout: { ...baseLayout, title: 'Box Plot', yaxis: { ...baseLayout.yaxis, title: yCol } }
         };
@@ -343,8 +312,8 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
           plotData: [{
             type: 'violin',
             y: getColumn(yCol),
-            marker: { color: themeColors.primary },
-            line: { color: themeColors.primary }
+            marker: { color: colors.brand },
+            line: { color: colors.brand }
           }],
           layout: { ...baseLayout, title: 'Violin Plot', yaxis: { ...baseLayout.yaxis, title: yCol } }
         };
@@ -356,7 +325,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
           plotData: [{
             type: 'histogram',
             x: getColumn(xCol),
-            marker: { color: themeColors.primary, line: { color: '#fff', width: 0.5 } }
+            marker: { color: colors.brand, line: { color: '#fff', width: 0.5 } }
           }],
           layout: { ...baseLayout, title: 'Histogram', xaxis: { ...baseLayout.xaxis, title: xCol }, yaxis: { ...baseLayout.yaxis, title: 'Frequency' } }
         };
@@ -382,7 +351,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             z: matrix,
             x: numericCols,
             y: numericCols,
-            colorscale: isDark ? [[0, '#020408'], [0.5, '#00F0FF'], [1, '#FF0055']] : 'Viridis',
+            colorscale: [[0, colors.surface], [0.5, colors.accent1], [1, colors.accent3]],
             showscale: true
           }],
           layout: { ...baseLayout, title: 'Correlation Heatmap' }
@@ -415,10 +384,10 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             type: 'waterfall',
             x: getColumn(xCol),
             y: getColumn(yCol),
-            connector: { line: { color: themeColors.primary } },
-            increasing: { marker: { color: isDark ? '#00FF88' : '#10b981' } },
-            decreasing: { marker: { color: isDark ? '#FF0055' : '#ef4444' } },
-            totals: { marker: { color: isDark ? '#FFD700' : '#f59e0b' } }
+            connector: { line: { color: colors.brand } },
+            increasing: { marker: { color: colors.success } },
+            decreasing: { marker: { color: colors.error } },
+            totals: { marker: { color: colors.warning } }
           }],
           layout: { ...baseLayout, title: 'Waterfall Chart', xaxis: { ...baseLayout.xaxis, title: xCol }, yaxis: { ...baseLayout.yaxis, title: yCol } }
         };
@@ -432,7 +401,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             type: 'funnel',
             y: getColumn(xCol),
             x: getColumn(yCol),
-            marker: { color: themeColors.primary }
+            marker: { color: colors.brand }
           }],
           layout: { ...baseLayout, title: 'Funnel Chart' }
         };
@@ -450,15 +419,15 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             x: getColumn(xCol),
             y: getColumn(yCol),
             z: getColumn(zCol),
-            marker: { color: themeColors.primary, size: 5, line: { color: '#fff', width: 0.5 } }
+            marker: { color: colors.brand, size: 5, line: { color: '#fff', width: 0.5 } }
           }],
           layout: {
             ...baseLayout,
             title: '3D Scatter Plot',
             scene: {
-              xaxis: { title: xCol, gridcolor: themeColors.grid },
-              yaxis: { title: yCol, gridcolor: themeColors.grid },
-              zaxis: { title: zCol, gridcolor: themeColors.grid },
+              xaxis: { title: xCol, gridcolor: colors.borderSubtle },
+              yaxis: { title: yCol, gridcolor: colors.borderSubtle },
+              zaxis: { title: zCol, gridcolor: colors.borderSubtle },
               bgcolor: 'transparent'
             }
           }
@@ -628,7 +597,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             type: 'sankey',
             node: {
               label: [...new Set([...getColumn(sourceCol), ...getColumn(targetCol)])],
-              color: themeColors.primary,
+              color: colors.brand,
               pad: 15,
               thickness: 20,
               line: { color: '#fff', width: 0.5 }
@@ -637,7 +606,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
               source: getColumn(sourceCol).map((s: string) => [...new Set([...getColumn(sourceCol), ...getColumn(targetCol)])].indexOf(s)),
               target: getColumn(targetCol).map((t: string) => [...new Set([...getColumn(sourceCol), ...getColumn(targetCol)])].indexOf(t)),
               value: getColumn(valueCol),
-              color: isDark ? 'rgba(0, 240, 255, 0.4)' : 'rgba(59, 130, 246, 0.4)'
+              color: `${colors.accent2}66` // 66 = 40% opacity
             }
           }],
           layout: { ...baseLayout, title: 'Sankey Diagram' }
@@ -778,9 +747,9 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             locationmode: 'USA-states',
             locations: locations,
             z: z,
-            colorscale: isDark ? [[0, '#020408'], [0.5, '#00F0FF'], [1, '#FF0055']] : 'Blues',
-            colorbar: { title: useCount ? 'Count' : bestValueCol, tickfont: { color: themeColors.text } },
-            marker: { line: { color: themeColors.primary, width: 1 } }
+            colorscale: [[0, colors.surface], [0.5, colors.accent1], [1, colors.accent3]],
+            colorbar: { title: useCount ? 'Count' : bestValueCol, tickfont: { color: colors.text } },
+            marker: { line: { color: colors.brand, width: 1 } }
           }],
           layout: {
             ...baseLayout,
@@ -789,8 +758,8 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
               scope: 'usa',
               projection: { type: 'albers usa' },
               showlakes: true,
-              lakecolor: isDark ? 'rgba(0, 240, 255, 0.1)' : 'rgba(59, 130, 246, 0.1)',
-              bgcolor: themeColors.bgPlot
+              lakecolor: `${colors.accent1}1A`, // 1A = 10% opacity
+              bgcolor: 'transparent'
             }
           }
         };
@@ -840,13 +809,11 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
       case 'table':
       default: {
         // Theme-aware colors
-        const headerFill = isDark ? 'rgba(0, 240, 255, 0.2)' : '#f3f4f6';
-        const headerFontColor = isDark ? '#E0F7FA' : '#1f2937';
-        const cellFill = isDark
-          ? ['rgba(2, 4, 8, 0.5)', 'rgba(0, 240, 255, 0.05)']
-          : ['#ffffff', '#f9fafb'];
-        const cellFontColor = isDark ? '#E0F7FA' : '#374151';
-        const lineColor = isDark ? '#00F0FF' : '#e5e7eb';
+        const headerFill = `${colors.surfaceElevated}33`;
+        const headerFontColor = colors.text;
+        const cellFill = `${colors.surface}1A`;
+        const cellFontColor = colors.textMuted;
+        const lineColor = colors.borderSubtle;
 
         return {
           plotData: [{
@@ -856,14 +823,14 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
               align: 'center',
               line: { width: 1, color: lineColor },
               fill: { color: headerFill },
-              font: { family: isDark ? 'Rajdhani' : 'Inter', size: 14, color: headerFontColor }
+              font: { family: 'Inter, system-ui, sans-serif', size: 14, color: headerFontColor }
             },
             cells: {
               values: columns.map((col: string) => getColumn(col)),
               align: 'center',
-              line: { color: isDark ? 'rgba(0, 240, 255, 0.1)' : '#e5e7eb', width: 1 },
+              line: { color: lineColor, width: 1 },
               fill: { color: cellFill },
-              font: { family: isDark ? 'Rajdhani' : 'Inter', size: 12, color: cellFontColor }
+              font: { family: 'Inter, system-ui, sans-serif', size: 12, color: cellFontColor }
             }
           }],
           layout: { ...baseLayout, title: 'Data Table' }
@@ -884,28 +851,22 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
     <div className="w-full space-y-4">
       {/* Chart Type Selector */}
       {compatibleChartTypes.length > 1 && (
-        <div className={`flex flex-wrap gap-1.5 p-2 border rounded backdrop-blur-sm ${isDark
-          ? 'bg-[#020408]/60 border-[#00F0FF]/20'
-          : 'bg-white/60 border-gray-200'
-          }`}>
-          <span className={`text-[10px] font-bold uppercase tracking-wider mr-2 self-center ${isDark ? 'text-[#00F0FF]/70' : 'text-gray-500'
-            }`}>
-            Visualization:
+        <div className="flex flex-wrap gap-1.5 p-2 border border-[var(--color-border)] rounded backdrop-blur-sm bg-[var(--color-surface)]/50">
+          {/* Label */}
+          <span className="text-[10px] font-bold uppercase tracking-wider mr-2 self-center text-[var(--color-text-muted)]">
+            Chart Type:
           </span>
+
+          {/* Chart Type Buttons */}
           {compatibleChartTypes.map((chartType) => (
             <button
               key={chartType}
               onClick={() => setSelectedChartType(chartType)}
               className={`
-                px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider
-                transition-all duration-200
+                px-2 py-1 text-[10px] font-medium rounded transition-all cursor-pointer
                 ${selectedChartType === chartType
-                  ? isDark
-                    ? 'bg-[#00F0FF] text-[#020408] shadow-[0_0_10px_rgba(0,240,255,0.5)]'
-                    : 'bg-blue-500 text-white shadow-sm'
-                  : isDark
-                    ? 'bg-[#020408]/80 text-[#00F0FF]/70 border border-[#00F0FF]/30 hover:border-[#00F0FF] hover:text-[#00F0FF]'
-                    : 'bg-white text-gray-600 border border-gray-200 hover:border-blue-300 hover:text-blue-500'
+                  ? 'bg-[var(--color-brand)] text-white shadow-md'
+                  : 'bg-[var(--color-surface-elevated)] text-[var(--color-text)] hover:bg-[var(--color-brand)]/20'
                 }
               `}
             >
