@@ -1,36 +1,30 @@
-from dotenv import load_dotenv
 from pathlib import Path
 import os
-
-# Load .env from project root (one level up from backend/)
-# MUST BE DONE BEFORE IMPORTING SERVICES
-env_path = Path(__file__).resolve().parent.parent / '.env'
-load_dotenv(dotenv_path=env_path)
+from contextlib import asynccontextmanager
+import asyncio
+import logging
 
 from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import logging
-from contextlib import asynccontextmanager
-import asyncio
-
-from services.database import db_service
-# Duplicate import removed
-from services.llm_agent import llm_agent
-from services.auth_service import auth_service
-
-# Auth Deps
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi import Depends, status
 from datetime import timedelta
 from jose import JWTError, jwt
 
+# Config
+from config import settings
+
+from services.database import db_service
+from services.llm_agent import llm_agent
+from services.auth_service import auth_service
+from services.chat_history import chat_history
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 # Configure Logging
-log_level = os.getenv("LOG_LEVEL", "DEBUG").upper()
 logging.basicConfig(
-    level=getattr(logging, log_level),
+    level=getattr(logging, settings.log_level.upper()),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler("debug.log"),
@@ -40,25 +34,27 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Models
+# --- Models ---
+
 class QueryRequest(BaseModel):
     question: str
-    model_id: str = "gemma-3-27b-it" # Default to High Quota model
-    fast_mode: bool = False  # Skip plan construction for simple queries
-    multi_agent: bool = False  # Use LangGraph multi-agent workflow for complex queries
+    thread_id: str | None = None
+    model_id: str = "gemma-3-27b-it" 
+    fast_mode: bool = False
+    multi_agent: bool = False
 
 class QueryResponse(BaseModel):
     sql: str
     data: dict
     insight: str
-    visualization_type: str = "table" # 'bar', 'pie', 'line', 'scatter', 'map', 'table'
+    visualization_type: str = "table"
     error: str | None = None
     meta: dict | None = None
-    attempts: int = 1  # Number of SQL generation attempts
-    reflections: list[str] = []  # Self-critiques from failed attempts
-    query_plan: str | None = None  # Natural language query plan
-    agent_mode: str = "single"  # "single" or "multi"
-    agents_used: list[str] | None = None  # e.g., ["schema_navigator", "sql_writer", "critic"]
+    attempts: int = 1
+    reflections: list[str] = []
+    query_plan: str | None = None
+    agent_mode: str = "single"
+    agents_used: list[str] | None = None
 
 class Token(BaseModel):
     access_token: str
@@ -73,6 +69,27 @@ class User(BaseModel):
 class UserCreate(User):
     password: str
 
+class ThreadCreate(BaseModel):
+    title: str = "New Chat"
+
+class ThreadUpdate(BaseModel):
+    title: str | None = None
+    pinned: bool | None = None
+
+# --- Helpers ---
+
+import math
+def clean_nans(obj):
+    """Recursively replace NaN/Infinity with None for JSON compliance."""
+    if isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+    elif isinstance(obj, dict):
+        return {k: clean_nans(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [clean_nans(v) for v in obj]
+    return obj
+
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -80,9 +97,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "supersecretkey")
-        ALGORITHM = "HS256"
-        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=["HS256"])
         username: str = payload.get("sub")
         if username is None:
              raise credentials_exception
@@ -94,20 +109,20 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         raise credentials_exception
     return user_dict
 
+# --- App Lifecycle ---
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Load data
     logger.info("Initializing application and loading data...")
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key or "YOUR_API_KEY" in api_key:
-        logger.warning("GEMINI_API_KEY not set in .env")
-    else:
-        llm_agent.configure(api_key)
+    try:
+        llm_agent.configure(settings) 
+    except Exception as e:
+        logger.error(f"Failed to configure agent on startup: {e}")
     
     # Prune history on startup
     try:
-        from services.chat_history import chat_history
-        chat_history.prune_old_messages()
+        chat_history.prune_old_messages(settings.chat_history_retention_hours)
         logger.info("Chat history pruned on startup.")
     except Exception as e:
         logger.warning(f"Failed to prune history: {e}")
@@ -118,7 +133,7 @@ async def lifespan(app: FastAPI):
         while True:
             await asyncio.sleep(3600)  # Sleep for 1 hour
             try:
-                chat_history.prune_old_messages()
+                chat_history.prune_old_messages(settings.chat_history_retention_hours)
                 logger.info("Periodic chat history pruning completed.")
             except Exception as e:
                 logger.error(f"Periodic history pruning failed: {e}")
@@ -146,12 +161,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/config/models")
-async def get_models():
-    """Returns the list of available LLM models."""
-    return llm_agent.get_available_models()
-
-from services.chat_history import chat_history
+# --- Routes ---
 
 @app.get("/health")
 async def health_check():
@@ -164,7 +174,12 @@ async def health_check():
         "tables": db_service.get_schema().count("Table:")
     }
 
-# --- Auth Routes ---
+@app.get("/config/models")
+async def get_models():
+    """Returns the list of available LLM models."""
+    return llm_agent.get_available_models()
+
+# Auth Routes
 @app.post("/auth/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     user_dict = auth_service.get_user(form_data.username)
@@ -197,80 +212,114 @@ async def login_guest():
     access_token = auth_service.create_access_token(data={"sub": guest_username}, expires_delta=timedelta(hours=24))
     return {"access_token": access_token, "token_type": "bearer"}
 
-# --- Protected Routes ---
+# Thread Routes
+@app.get("/threads")
+async def get_threads(current_user: dict = Depends(get_current_user)):
+    """Returns list of threads for the current user."""
+    threads = chat_history.get_user_threads(current_user['username'])
+    return {"threads": clean_nans(threads)}
 
-@app.get("/history")
-async def get_history(current_user: dict = Depends(get_current_user)):
-    """Returns recent chat messages."""
-    messages = chat_history.get_recent_messages()
-    return {"messages": messages}
+@app.post("/threads")
+async def create_thread(thread: ThreadCreate, current_user: dict = Depends(get_current_user)):
+    """Creates a new thread."""
+    thread_id = chat_history.create_thread(current_user['username'], thread.title)
+    return {"id": thread_id, "title": thread.title}
 
+@app.get("/threads/{thread_id}/messages")
+async def get_thread_messages(thread_id: str, current_user: dict = Depends(get_current_user)):
+    """Returns messages for a specific thread."""
+    messages = chat_history.get_thread_messages(thread_id)
+    return {"messages": clean_nans(messages)}
+
+@app.delete("/threads/{thread_id}")
+async def delete_thread(thread_id: str, current_user: dict = Depends(get_current_user)):
+    """Deletes a thread."""
+    chat_history.delete_thread(thread_id)
+    return {"status": "success"}
+
+@app.patch("/threads/{thread_id}")
+async def update_thread(thread_id: str, update: ThreadUpdate, current_user: dict = Depends(get_current_user)):
+    """Updates thread title or pinned status."""
+    chat_history.update_thread(thread_id, title=update.title, pinned=update.pinned)
+    return {"status": "success"}
+
+# Query Route
 @app.post("/query", response_model=QueryResponse)
 async def query_data(request: QueryRequest = Body(...), current_user: dict = Depends(get_current_user)):
     try:
-        # 1. Save User Message (Include Username)
-        chat_history.add_message(role="user", content=request.question, metadata={"user": current_user['username']})
+        # 1. Manage Thread
+        thread_id = request.thread_id
+        if not thread_id:
+            initial_title = request.question[:30] + "..." if len(request.question) > 30 else request.question
+            thread_id = chat_history.create_thread(current_user['username'], title=initial_title)
+        
+        # 2. Save User Message
+        chat_history.add_message(thread_id, role="user", content=request.question, metadata={"user": current_user['username']})
 
-        # 2. Ensure configured
-        if not llm_agent.api_key:
-             api_key = os.getenv("GEMINI_API_KEY")
-             if api_key and "YOUR_API_KEY" not in api_key:
-                 llm_agent.configure(api_key)
-             else:
-                raise HTTPException(status_code=500, detail="Backend configuration error: API Key missing.")
+        # 3. Ensure configured
+        try:
+            logger.info("Checking Agent Configuration...")
+            # Re-configure with current settings in case of hot-reload or initial failure
+            # configure() is robust and will handle if already configured or if keys missing
+            llm_agent.configure(settings) 
+            
+            # Explicit check if we are in Gemini mode but missing key
+            if not settings.use_bedrock and not settings.use_local_model:
+                 if not settings.gemini_api_key or "YOUR_API_KEY" in settings.gemini_api_key:
+                     raise ValueError("Gemini API Key missing or invalid in settings.")
+                     
+        except Exception as e:
+            error_msg = str(e)
+            logger.error(f"Configuration Error: {error_msg}")
+            chat_history.add_message(
+                thread_id, 
+                role="bot", 
+                content=f"Configuration Error: {error_msg}",
+                metadata={"thoughts": ["Error during configuration."], "thread_id": thread_id}
+            )
+            return QueryResponse(
+                sql="", data={"row_count": 0, "columns": [], "data": []},
+                insight=f"I cannot proceed because: {error_msg}",
+                error=error_msg, visualization_type="table", attempts=0, 
+                meta={"thoughts": ["Error during configuration."], "thread_id": thread_id}
+            )
 
-        # 3. Get Schema
+        # 4. Get Schema
         schema = db_service.get_schema()
 
-        # 4. Set Model
+        # 5. Set Model
         if request.model_id:
             llm_agent.set_model(request.model_id)
 
-        # Get recent history for context (last 5 messages)
-        recent_history = chat_history.get_recent_messages(hours=24)
-        
-        # 5. HYBRID ROUTING: Multi-Agent vs Single-Agent
+        # Get recent history for context
+        thread_messages = chat_history.get_thread_messages(thread_id)
+        history_context = []
+        for msg in thread_messages[-10:]:
+             history_context.append({"role": msg['role'], "content": msg['text']})
+
+        # 6. Logic Routing
         if request.multi_agent:
-            # Use LangGraph multi-agent workflow for complex queries
             logger.info(f"Routing to multi-agent workflow for user {current_user['username']}")
-            
             try:
                 from services.langgraph_agent import MultiAgentSQLGenerator
+                multi_agent = MultiAgentSQLGenerator(database_service=db_service, llm_agent=llm_agent)
+                multi_result = await multi_agent.ainvoke(query=request.question, username=current_user['username'])
                 
-                multi_agent = MultiAgentSQLGenerator(
-                    database_service=db_service,
-                    llm_agent=llm_agent
-                )
-                
-                multi_result = await multi_agent.ainvoke(
-                    query=request.question,
-                    username=current_user['username']
-                )
-                
-                # Extract results from multi-agent workflow
                 sql_query = multi_result.get("sql")
                 results = multi_result.get("data")
                 retry_error = multi_result.get("error")
                 attempts = multi_result.get("attempts", 1)
                 reflections = multi_result.get("reflections", [])
-                query_plan = multi_result.get("query_plan")  # Multi-agent may not have query_plan
+                query_plan = multi_result.get("query_plan")
                 agent_mode = "multi"
                 agents_used = multi_result.get("agents_used", [])
                 thoughts = multi_result.get("thoughts", [])
-                
             except Exception as e:
                 logger.error(f"Multi-agent workflow failed: {e}", exc_info=True)
-                # Fallback to single-agent
-                logger.info("Falling back to single-agent workflow")
                 request.multi_agent = False
                 retry_result = llm_agent.generate_sql_with_retry(
-                    user_query=request.question,
-                    schema_str=schema,
-                    db_service=db_service,
-                    history=recent_history,
-                    fast_mode=request.fast_mode,
-                    max_retries=3,
-                    timeout_seconds=60
+                    user_query=request.question, schema_str=schema, db_service=db_service,
+                    history=history_context, fast_mode=request.fast_mode, max_retries=3, timeout_seconds=60
                 )
                 sql_query = retry_result.get("sql")
                 results = None
@@ -282,15 +331,9 @@ async def query_data(request: QueryRequest = Body(...), current_user: dict = Dep
                 thoughts = llm_agent.last_thoughts
                 query_plan = retry_result.get("query_plan")
         else:
-            # Use existing single-agent reflexion loop
             retry_result = llm_agent.generate_sql_with_retry(
-                user_query=request.question,
-                schema_str=schema,
-                db_service=db_service,
-                history=recent_history,
-                fast_mode=request.fast_mode,
-                max_retries=3,
-                timeout_seconds=60
+                user_query=request.question, schema_str=schema, db_service=db_service,
+                history=history_context, fast_mode=request.fast_mode, max_retries=3, timeout_seconds=60
             )
             sql_query = retry_result.get("sql")
             results = None
@@ -301,142 +344,62 @@ async def query_data(request: QueryRequest = Body(...), current_user: dict = Dep
             agent_mode = "single"
             agents_used = None
             thoughts = llm_agent.last_thoughts
-        
-        # Handle retry failures (common for both paths)
+
+        # Handle Failures
         if (request.multi_agent and retry_error) or (not request.multi_agent and not retry_result.get("success")) or not sql_query:
             error_msg = retry_error or "Failed to generate valid SQL query"
-            chat_history.add_message(role="bot", content=f"Query generation failed: {error_msg}")
+            chat_history.add_message(thread_id, role="bot", content=f"Query generation failed: {error_msg}")
             return QueryResponse(
-                sql=sql_query or "",
-                data={"row_count": 0, "columns": [], "data": []},
+                sql=sql_query or "", data={"row_count": 0, "columns": [], "data": []},
                 insight=f"I attempted to generate a query {attempts} time(s) but encountered issues: {error_msg}",
-                error=error_msg,
-                visualization_type="table",
-                attempts=attempts,
-                reflections=reflections,
-                query_plan=query_plan,
-                agent_mode=agent_mode,
-                agents_used=agents_used,
-                meta={
-                    "thoughts": thoughts,
-                    "row_count": 0
-                }
+                error=error_msg, visualization_type="table", attempts=attempts, reflections=reflections,
+                query_plan=query_plan, agent_mode=agent_mode, agents_used=agents_used,
+                meta={"thoughts": thoughts, "row_count": 0, "thread_id": thread_id}
             )
-        
-        # Handle special SQL responses (RATE_LIMIT, etc.)
+
+        # Handle Rate Limit
         if sql_query == "RATE_LIMIT":
-            chat_history.add_message(role="bot", content="Google API Rate Limit Exceeded. Please try again in a minute.")
+            chat_history.add_message(thread_id, role="bot", content="Google API Rate Limit Exceeded.")
             return QueryResponse(
-                sql="",
-                data={"row_count": 0, "columns": [], "data": []},
-                insight="**Rate Limit Exceeded**: The Google Gemini API is temporarily blocking requests due to high traffic/quota. Please wait 1-2 minutes and try again, or switch to a local model.",
-                error="Rate Limit Exceeded",
-                visualization_type="table",
-                attempts=attempts,
-                reflections=reflections,
-                query_plan=query_plan,
-                agent_mode=agent_mode,
-                agents_used=agents_used
+                sql="", data={"row_count": 0, "columns": [], "data": []},
+                insight="**Rate Limit Exceeded**: Please wait 1-2 minutes.",
+                error="Rate Limit Exceeded", visualization_type="table", attempts=attempts, reflections=reflections,
+                query_plan=query_plan, agent_mode=agent_mode, agents_used=agents_used, meta={"thread_id": thread_id}
             )
 
-        if sql_query == "INVALID_KEY":
-             chat_history.add_message(role="bot", content="Google API Key is invalid.")
-             return QueryResponse(
-                sql="",
-                data={"row_count": 0, "columns": [], "data": []},
-                insight="**Configuration Error**: The Google Gemini API Key appears to be invalid or expired. Please check your `.env` file.",
-                error="Invalid API Key",
-                visualization_type="table",
-                attempts=attempts,
-                reflections=reflections,
-                query_plan=query_plan,
-                agent_mode=agent_mode,
-                agents_used=agents_used
-             )
-        
-        if sql_query and sql_query.startswith("API_ERROR"):
-             chat_history.add_message(role="bot", content="External API Error.")
-             return QueryResponse(
-                sql="",
-                data={"row_count": 0, "columns": [], "data": []},
-                insight=f"**API Error**: {sql_query}",
-                error=sql_query,
-                visualization_type="table",
-                attempts=attempts,
-                reflections=reflections,
-                query_plan=query_plan,
-                agent_mode=agent_mode,
-                agents_used=agents_used
-             )
-
-        if not sql_query or sql_query == "NO_MATCH":
-            chat_history.add_message(role="bot", content="I couldn't find relevant data.")
-            return QueryResponse(
-                sql="",
-                data={"row_count": 0, "columns": [], "data": []}, 
-                insight="I'm sorry, I couldn't find relevant data in the database to answer your question. Please try asking about patients, visits, or billing.",
-                visualization_type="table",
-                attempts=attempts,
-                reflections=reflections,
-                query_plan=query_plan,
-                agent_mode=agent_mode,
-                agents_used=agents_used
-            )
-
-        # 6. Execute SQL (validation already done in retry loop or multi-agent workflow)
+        # Execute SQL
         if not results:
             try:
                 results = db_service.execute_query(sql_query)
                 if not results: results = {"row_count": 0, "columns": [], "data": []}
             except Exception as e:
                 logger.error(f"SQL Execution Error: {e}")
-                chat_history.add_message(role="bot", content=f"Database Error: {str(e)}")
+                chat_history.add_message(thread_id, role="bot", content=f"Database Error: {str(e)}")
                 return QueryResponse(
-                    sql=sql_query,
-                    data={"row_count": 0, "columns": [], "data": []},
+                    sql=sql_query, data={"row_count": 0, "columns": [], "data": []},
                     insight=f"I generated a query but it failed to execute. Error: {str(e)}",
-                    error=str(e),
-                    visualization_type="table",
-                    attempts=attempts,
-                    reflections=reflections,
-                    query_plan=query_plan,
-                    agent_mode=agent_mode,
-                    agents_used=agents_used
+                    error=str(e), visualization_type="table", attempts=attempts, reflections=reflections,
+                    query_plan=query_plan, agent_mode=agent_mode, agents_used=agents_used, meta={"thread_id": thread_id}
                 )
 
-        # 7. Determine Visualization Type
+        # Generate Insight
         vis_type = llm_agent.determine_visualization(request.question, results)
-
-        # 8. Generate Insight
-        insight = llm_agent.generate_insight(request.question, results, history=recent_history)
+        insight = llm_agent.generate_insight(request.question, results, history=history_context)
         
-        # 9. Save Bot Response
         chat_history.add_message(
-            role="bot", 
-            content=insight, 
+            thread_id, role="bot", content=insight, 
             metadata={
-                "sql": sql_query,
-                "data": results,
-                "visualization_type": vis_type,
-                "attempts": attempts,
-                "query_plan": query_plan
+                "sql": sql_query, "data": results, "visualization_type": vis_type,
+                "attempts": attempts, "query_plan": query_plan,
+                "thoughts": thoughts # Save thinking process for persistence
             }
         )
 
         return QueryResponse(
-            sql=sql_query,
-            data=results,
-            insight=insight,
-            visualization_type=vis_type,
-            attempts=attempts,
-            reflections=reflections,
-            query_plan=query_plan,
-            agent_mode=agent_mode,
-            agents_used=agents_used,
-            meta={
-                "thoughts": thoughts,
-                "row_count": results.get('row_count', 0)
-            }
+            sql=sql_query, data=clean_nans(results), insight=insight, visualization_type=vis_type,
+            attempts=attempts, reflections=reflections, query_plan=query_plan,
+            agent_mode=agent_mode, agents_used=agents_used,
+            meta=clean_nans({"thoughts": thoughts, "row_count": results.get('row_count', 0), "thread_id": thread_id})
         )
     except Exception as e:
         import traceback

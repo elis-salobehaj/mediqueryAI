@@ -25,7 +25,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
           CHAT_HISTORY_RETENTION_HOURS: 24
-          USE_LOCAL_MODEL: true
+          USE_LOCAL_MODEL: false
         run: |
           # Build only backend-unit
           docker buildx bake -f docker-compose.test.yml backend-unit \

@@ -14,13 +14,15 @@
 
 | Plan | Status | Priority | Last Updated | Progress | Related Files |
 |------|--------|----------|--------------|----------|---------------|
+| [Frontend UI Overhaul](plans/active/frontend_ui_overhaul.md) | In Progress | High | 2026-01-24 | 4/7 phases ✅ | `frontend/src/index.css`, `frontend/src/components/*` |
 | [LangGraph Refactor](plans/active/langgraph-refactor.md) | In Progress | High | 2026-01-22 | 2/5 steps ✅ | `backend/services/langgraph_agent.py` |
 
 **Current Focus**: 
-- ✅ AWS Bedrock integration complete (API key configured, dependencies added)
-- 🔄 Next: Fix `_should_continue` routing logic to handle zero-row queries and SQL deduplication
+- 🔄 **Frontend UI Overhaul**: Migrating to Tailwind v4, OKLCH colors, Container Queries
+- ✅ Pydantic Settings v2 configuration complete
+- ✅ Dependency isolation complete (google-genai removed from Bedrock mode)
 
-**Quick Context**: Refactoring multi-agent workflow to use LangGraph for better reliability. AWS Bedrock with Claude 4.5 models (Haiku for fast agents, Sonnet for SQL generation) is now configured and ready to test.
+**Quick Context**: 2026 Frontend Architecture Overhaul - CSS-first theming with OKLCH colors, container queries for responsive components, and zero-JS-runtime theme switching.
 
 ---
 
@@ -103,8 +105,8 @@ mediqueryAI/
 └── docs/             # You are here
 ```
 
-**Tech Stack**: Python 3.11, FastAPI, LangGraph, React, TypeScript, DuckDB
+**Tech Stack**: Python 3.12, FastAPI, LangGraph, React 19, TypeScript, Tailwind v4, MySQL
 **Key Services**: 
 - `backend/services/langgraph_agent.py` - Multi-agent SQL workflow
 - `backend/services/llm_agent.py` - LLM interaction layer
-- `backend/services/database.py` - DuckDB interface
+- `backend/config.py` - Pydantic Settings v2 configuration

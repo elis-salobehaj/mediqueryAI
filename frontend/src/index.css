@@ -1,43 +1,186 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@theme {
+  /* OKLCH Color Space - Perceptually Uniform */
+  /* Light Mode Base Colors */
+  --color-brand: oklch(65% 0.25 260);
+  --color-surface: oklch(98% 0.01 260);
+  --color-surface-elevated: oklch(96% 0.01 260);
+  --color-text: oklch(20% 0.05 260);
+  --color-text-secondary: oklch(45% 0.03 260);
+  --color-text-tertiary: oklch(60% 0.02 260);
+  --color-border: oklch(90% 0.01 260);
 
+  /* Chart Palette (Soft, Professional) */
+  --color-chart-accent-1: oklch(70% 0.15 250);
+  /* Soft Sky */
+  --color-chart-accent-2: oklch(65% 0.20 280);
+  /* Soft Violet */
+  --color-chart-accent-3: oklch(68% 0.18 160);
+  /* Soft Emerald */
+  --color-chart-accent-4: oklch(75% 0.15 90);
+  /* Soft Amber */
+  --color-chart-accent-5: oklch(70% 0.18 350);
+  /* Soft Pink */
+  --color-chart-accent-6: oklch(68% 0.20 300);
+  /* Soft Lavender */
+
+  /* Design Tokens */
+  --radius-xl: 1rem;
+  --font-body: 'Inter', sans-serif;
+  --font-heading: 'Outfit', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* Dark Theme Overrides (Abyss Mode) */
+[data-theme="dark"] {
+  --color-surface: oklch(15% 0.05 260);
+  --color-surface-elevated: oklch(18% 0.05 260);
+  --color-text: oklch(98% 0.02 260);
+  --color-text-secondary: oklch(65% 0.03 260);
+  --color-text-tertiary: oklch(45% 0.03 260);
+  --color-brand: oklch(75% 0.20 260);
+  --color-border: oklch(25% 0.03 260);
+
+  /* Chart colors remain same - OKLCH ensures perceptual consistency */
+}
+
+/* Drilling Slate Theme (Oil & Gas Industry) */
+[data-theme="drilling-slate"] {
+  --color-surface: oklch(25% 0.02 250);
+  /* Slate 800: #1e293b */
+  --color-surface-elevated: oklch(28% 0.02 250);
+  --color-text: oklch(92% 0.01 250);
+  /* Slate 200: #e2e8f0 */
+  --color-text-secondary: oklch(70% 0.01 250);
+  --color-text-tertiary: oklch(50% 0.02 250);
+  --color-brand: oklch(75% 0.20 260);
+  --color-border: oklch(35% 0.02 250);
+
+  /* Industry-Specific Accents */
+  --color-safety-orange: oklch(70% 0.18 35);
+  /* #f97316 - Alerts/Warnings */
+  --color-crude-gold: oklch(80% 0.15 95);
+  /* #eab308 - High-Value Metrics */
+  --color-flow-green: oklch(70% 0.18 145);
+  /* #22c55e - Steady Production */
+
+  /* Chart colors remain same - OKLCH ensures perceptual consistency */
+}
+
+/* Legacy Variable Mapping (for gradual migration) */
 :root {
-  /* Futuristic HUD Palette */
-  --hud-bg-dark: #020408;
-  --hud-bg-panel: rgba(5, 10, 20, 0.65);
+  /* Map to OKLCH variables */
+  --bg-primary: var(--color-surface);
+  --bg-secondary: oklch(96% 0.01 260);
+  --bg-tertiary: oklch(93% 0.01 260);
+  --bg-input: var(--color-surface);
 
-  --hud-cyan: #00F0FF;
-  --hud-cyan-dim: rgba(0, 240, 255, 0.2);
-  --hud-cyan-glow: rgba(0, 240, 255, 0.6);
-  --hud-accent: #FF0055;
-  /* Error/Alert */
+  --text-primary: var(--color-text);
+  --text-secondary: var(--color-text-secondary);
+  --text-tertiary: var(--color-text-tertiary);
 
-  --hud-border: 1px solid rgba(0, 240, 255, 0.3);
-  --hud-text: #E0F7FA;
+  --border-subtle: var(--color-border);
+  --accent-primary: var(--color-brand);
+  --accent-hover: oklch(60% 0.25 260);
 
-  --font-display: 'Orbitron', sans-serif;
-  --font-body: 'Rajdhani', sans-serif;
+  /* Chart Colors (Light) */
+  --chart-bg-paper: transparent;
+  --chart-bg-plot: transparent;
+  --chart-text: var(--color-text);
+  --chart-grid: oklch(90% 0.01 260 / 0.3);
+  --chart-primary: var(--color-brand);
+
+  /* Chart Accents */
+  --chart-accent-1: var(--color-chart-accent-1);
+  --chart-accent-2: var(--color-chart-accent-2);
+  --chart-accent-3: var(--color-chart-accent-3);
+  --chart-accent-4: var(--color-chart-accent-4);
+  --chart-accent-5: var(--color-chart-accent-5);
+  --chart-accent-6: var(--color-chart-accent-6);
+
+  /* Chart Fills (with alpha) */
+  --chart-fill-area: oklch(70% 0.15 250 / 0.2);
+  --chart-fill-hover: oklch(70% 0.15 250 / 0.4);
+  --chart-link-color: oklch(70% 0.15 250 / 0.3);
+}
+
+[data-theme='dark'] {
+  /* Abyss Mode (Deep, Modern) */
+  --bg-primary: oklch(8% 0.05 260);
+  --bg-secondary: oklch(12% 0.05 260);
+  --bg-tertiary: oklch(16% 0.05 260);
+  --bg-input: oklch(12% 0.05 260);
+
+  --text-primary: oklch(98% 0.02 260);
+  --text-secondary: oklch(65% 0.03 260);
+  --text-tertiary: oklch(45% 0.03 260);
+
+  --border-subtle: oklch(25% 0.03 260);
+  --accent-primary: oklch(75% 0.20 260);
+  --accent-hover: oklch(80% 0.18 260);
+
+  /* Chart Colors (Dark - Abyss) */
+  --chart-bg-paper: transparent;
+  --chart-bg-plot: transparent;
+  --chart-text: oklch(95% 0.02 260);
+  --chart-grid: oklch(25% 0.03 260 / 0.3);
+  --chart-primary: oklch(75% 0.20 260);
+}
+
+[data-theme='drilling-slate'] {
+  /* Drilling Slate Mode (Oil & Gas Industry) */
+  --bg-primary: oklch(25% 0.02 250);
+  --bg-secondary: oklch(28% 0.02 250);
+  --bg-tertiary: oklch(32% 0.02 250);
+  --bg-input: oklch(28% 0.02 250);
+
+  --text-primary: oklch(92% 0.01 250);
+  --text-secondary: oklch(70% 0.01 250);
+  --text-tertiary: oklch(50% 0.02 250);
+
+  --border-subtle: oklch(35% 0.02 250);
+  --accent-primary: oklch(75% 0.20 260);
+  --accent-hover: oklch(80% 0.18 260);
+
+  /* Chart Colors (Drilling Slate) */
+  --chart-bg-paper: transparent;
+  --chart-bg-plot: transparent;
+  --chart-text: oklch(92% 0.01 250);
+  --chart-grid: oklch(35% 0.02 250 / 0.3);
+  --chart-primary: oklch(75% 0.20 260);
+
+  /* Industry Accents */
+  --accent-safety: oklch(70% 0.18 35);
+  /* Safety Orange */
+  --accent-value: oklch(80% 0.15 95);
+  /* Crude Gold */
+  --accent-flow: oklch(70% 0.18 145);
+  /* Flow Green */
 }
 
 body {
-  margin: 0;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   font-family: var(--font-body);
-  background-color: var(--hud-bg-dark);
-  color: var(--hud-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
   overflow: hidden;
-  /* Cyber Grid Background */
-  background-image:
-    linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
+}
+
+/* Utilities */
+.font-heading {
+  font-family: var(--font-heading);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
 }
 
 /* Scrollbar */
 ::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -45,242 +188,58 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--hud-cyan);
-  box-shadow: 0 0 10px var(--hud-cyan);
+  background: var(--text-tertiary);
+  border-radius: 3px;
+  opacity: 0.3;
 }
 
-/* Typography & Utils */
-.hud-title {
-  font-family: var(--font-display);
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  text-shadow: 0 0 10px var(--hud-cyan-glow);
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
 }
 
-.font-display {
-  font-family: var(--font-display);
-}
-
-.font-mono {
-  font-family: 'Courier New', monospace;
-}
-
-/* Fallback or specific mono */
-
-/* Scanline Overlay */
-.scanline {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(to bottom,
-      transparent 50%,
-      rgba(0, 240, 255, 0.02) 50%);
-  background-size: 100% 4px;
-  pointer-events: none;
-  z-index: 50;
-}
-
-/* --- HUD INPUT MODULE (Redesigned) --- */
-
-.hud-input-group {
-  position: relative;
-  display: flex;
-  align-items: center;
-  /* Glass panel effect */
-  background: linear-gradient(90deg,
-      rgba(0, 240, 255, 0.05) 0%,
-      rgba(0, 240, 255, 0.1) 50%,
-      rgba(0, 240, 255, 0.05) 100%);
-  border: 1px solid var(--hud-cyan-dim);
-  border-left: 2px solid var(--hud-cyan);
-  border-right: 2px solid var(--hud-cyan);
-  box-shadow: 0 0 15px rgba(0, 240, 255, 0.1);
-  clip-path: polygon(20px 0, 100% 0,
-      100% calc(100% - 20px), calc(100% - 20px) 100%,
-      0 100%, 0 20px);
-  padding: 2px;
-  transition: all 0.3s ease;
-}
-
-.hud-input-group:focus-within {
-  box-shadow: 0 0 30px var(--hud-cyan-dim);
-  border-color: var(--hud-cyan);
-}
-
-.hud-input-field {
-  background: transparent;
-  border: none;
-  color: var(--hud-cyan);
-  font-family: var(--font-display);
-  font-size: 1.1rem;
-  letter-spacing: 1px;
+/* Gemini Input (Refined for Abyss) */
+.gemini-input {
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 1rem;
   width: 100%;
   padding: 16px 24px;
-  text-transform: uppercase;
+  border-radius: 24px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
-.hud-input-field:focus {
+.gemini-input:focus {
   outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-primary);
 }
 
-.hud-input-field::placeholder {
-  color: rgba(0, 240, 255, 0.3);
+/* Plotly Override - Force Transparent Backgrounds */
+.js-plotly-plot .main-svg {
+  background: transparent !important;
 }
 
-/* --- CUSTOM SELECTOR --- */
-.hud-select-wrapper {
-  position: relative;
-  cursor: pointer;
-  user-select: none;
+.js-plotly-plot .bg {
+  fill: transparent !important;
 }
 
-.hud-select-trigger {
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid var(--hud-cyan-dim);
-  color: var(--hud-cyan);
-  padding: 8px 12px;
-  font-size: 0.8rem;
-  font-family: var(--font-display);
-  letter-spacing: 1px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.2s;
-  clip-path: polygon(0 0, 100% 0, 100% 80%, 90% 100%, 0 100%);
-}
-
-.hud-select-trigger:hover {
-  background: rgba(0, 240, 255, 0.1);
-  border-color: var(--hud-cyan);
-}
-
-.hud-select-options {
-  position: absolute;
-  bottom: 120%;
-  /* Opens UP */
-  left: 0;
-  width: 200px;
-  background: rgba(2, 4, 8, 0.95);
-  border: 1px solid var(--hud-cyan);
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
-  z-index: 100;
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
-  /* Rect logic */
-}
-
-.hud-option {
-  padding: 10px 16px;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.85rem;
-  font-family: var(--font-display);
-  transition: all 0.2s;
-  border-bottom: 1px solid rgba(0, 240, 255, 0.1);
-}
-
-.hud-option:hover,
-.hud-option.selected {
-  background: rgba(0, 240, 255, 0.2);
-  color: #fff;
-  padding-left: 20px;
-  /* Slight shift */
-}
-
-/* --- SEND BUTTON --- */
-.hud-btn-send {
-  background: var(--hud-cyan);
-  color: #000;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 1rem;
-  padding: 0 32px;
-  height: 100%;
-  border: none;
-  clip-path: polygon(20px 0, 100% 0, 100% 100%, 0 100%);
-  /* Angled left */
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.hud-btn-send:hover {
-  background: #fff;
-  box-shadow: 0 0 20px var(--hud-cyan);
-}
-
-.hud-btn-send:disabled {
-  background: #333;
-  color: #555;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-/* --- BACKGROUND LOGO --- */
-.bg-logo-fixed {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 40vw;
-  height: 40vh;
-  opacity: 0.05;
-  pointer-events: none;
-  z-index: 0;
-  background-image: url('/logo.png');
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: contain;
-  filter: drop-shadow(0 0 20px var(--hud-cyan));
-}
-
-/* --- Animations --- */
-@keyframes pulse-border {
-  0% {
-    border-color: rgba(0, 240, 255, 0.3);
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
 
-  50% {
-    border-color: rgba(0, 240, 255, 0.8);
-  }
-
-  100% {
-    border-color: rgba(0, 240, 255, 0.3);
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-.animate-border-pulse {
-  animation: pulse-border 2s infinite;
-}
-
-/* Recharts Customization Override */
-.recharts-cartesian-grid-horizontal line,
-.recharts-cartesian-grid-vertical line {
-  stroke: var(--hud-cyan-dim) !important;
-}
-
-.recharts-text {
-  fill: var(--hud-text) !important;
-  font-family: var(--font-body);
-}
-
-.hexagon-clip {
-  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-}
-
-.clip-corner {
-  clip-path: polygon(20px 0, 100% 0,
-      100% calc(100% - 20px), calc(100% - 20px) 100%,
-      0 100%, 0 20px);
-}
-
-.clip-button {
-  clip-path: polygon(10px 0, 100% 0,
-      100% calc(100% - 10px), calc(100% - 10px) 100%,
-      0 100%, 0 10px);
-}
-
-.ambient-glow {
-  @apply absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#00F0FF] opacity-[0.05] blur-[100px] pointer-events-none rounded-full;
+/* Scroll Stability */
+.custom-scrollbar {
+  scrollbar-gutter: stable;
 }

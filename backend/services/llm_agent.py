@@ -50,28 +50,135 @@ except ImportError:
 
 class LLMAgent:
     def __init__(self):
+        # Configuration will be injected via configure() or lazily accessed
+        self.settings = None 
         self.api_key = None
-        self.anthropic_key = os.getenv('ANTHROPIC_API_KEY')
+        
+        # Clients
         self.anthropic_client = None
-        self.model = None
-        self.use_local = os.getenv('USE_LOCAL_MODEL', 'false').lower() == 'true'
-        self.local_model = os.getenv('LOCAL_MODEL_NAME', 'qwen3:latest')
-        self.ollama_host = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
-        self.use_bedrock = os.getenv('USE_BEDROCK', 'false').lower() == 'true'
-        self.bedrock_region = os.getenv('AWS_BEDROCK_REGION', 'us-west-2')
-        self.bedrock_sql_writer = os.getenv('BEDROCK_SQL_WRITER_MODEL', 'anthropic.claude-3-5-sonnet-20241022-v2:0')
-        self.bedrock_navigator = os.getenv('BEDROCK_NAVIGATOR_MODEL', 'anthropic.claude-3-5-haiku-20241022-v1:0')
-        self.bedrock_critic = os.getenv('BEDROCK_CRITIC_MODEL', 'anthropic.claude-3-5-haiku-20241022-v1:0')
         self.bedrock_client = None
+        self.client = None # Gemini Client
+        
+        # State
+        self.model = None
         self.last_thoughts = []
         
         # Multi-Tenant Isolation: Query plan cache will be keyed by (username, query_hash) in Phase 3
         # Current isolation: Chat history tracks username in metadata (see chat_history.add_message)
         self.query_plan_cache = {}  # Placeholder for Phase 3 caching
         
-        # Safety Settings - Block None for medical data analysis (only for Google GenAI)
-        if HAS_GOOGLE_GENAI and types:
-            self.safety_settings = [
+        # Safety Settings (only needed if Gemini is used)
+        self.safety_settings = []
+        
+        # Semantic Retrieval
+        self.sql_retriever = None
+        
+    def _setup_semantic_engine(self):
+        """Initializes LlamaIndex ObjectIndex for semantic table retrieval."""
+        if not HAS_LLAMA_INDEX:
+            return
+
+        try:
+            self.last_thoughts.append("Initializing Semantic Engine...")
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            db_path = f"sqlite:///{os.path.join(base_dir, 'medical.db')}"
+            
+            engine = create_engine(db_path)
+            sql_database = SQLDatabase(engine)
+            
+            # Load metadata
+            meta_path = os.path.join(base_dir, "data", "semantic_metadata.json")
+            table_descriptions = {}
+            if os.path.exists(meta_path):
+                with open(meta_path, 'r') as f:
+                    meta = json.load(f)
+                    for item in meta:
+                        table_descriptions[item['table_name']] = item['description']
+
+            table_node_mapping = SQLTableNodeMapping(sql_database)
+            table_schema_objs = []
+            for table_name in sql_database.get_usable_table_names():
+                table_schema_objs.append(
+                    SQLTableSchema(
+                        table_name=table_name, 
+                        context_str=table_descriptions.get(table_name, "Medical data table")
+                    )
+                )
+
+            Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
+            
+            self.obj_index = ObjectIndex.from_objects(
+                table_schema_objs,
+                table_node_mapping,
+                VectorStoreIndex,
+            )
+            self.sql_retriever = self.obj_index.as_retriever(similarity_top_k=3)
+            logger.info("Semantic SQL Retriever initialized.")
+            
+        except Exception as e:
+            logger.error(f"Failed to setup semantic engine: {e}")
+            self.sql_retriever = None
+
+    def configure(self, settings):
+        """Configures the agent using the centralized Settings object."""
+        self.settings = settings
+        
+        # 1. Local Mode
+        if self.settings.use_local_model:
+            logger.info(f"Local model mode enabled: {self.settings.local_model_name}")
+            self._setup_semantic_engine()
+            return
+        
+        # 2. Bedrock Mode
+        if self.settings.use_bedrock and HAS_BEDROCK:
+            try:
+                if self.settings.aws_bearer_token_bedrock:
+                    self.bedrock_client = ChatBedrockConverse(
+                        model_id=self.settings.sql_writer_model,
+                        region_name=self.settings.aws_bedrock_region,
+                        temperature=0.0,
+                    )
+                    logger.info(f"Using AWS Bedrock model: {self.settings.sql_writer_model}")
+                    self.model = self.settings.base_model
+                else:
+                    logger.warning("AWS_BEARER_TOKEN_BEDROCK not set. Bedrock features disabled.")
+            except Exception as e:
+                logger.error(f"Failed to initialize Bedrock client: {e}")
+            return # EXIT HERE - Do not touch Google GenAI
+
+        # 3. Anthropic Mode (Direct)
+        if self.settings.anthropic_api_key:
+             self.anthropic_client = anthropic.Anthropic(api_key=self.settings.anthropic_api_key)
+             logger.info("Anthropic client initialized")
+             # If using direct Anthropic, we might stop here or continue check for Gemini fallback
+             # For now, let's treat it as a primary if configured and requested, but the model logic handles switching.
+        
+        # 4. Google Gemini Mode (Default/Fallback)
+        # ONLY if NOT in Bedrock/Local mode do we attempt this
+        if not HAS_GOOGLE_GENAI or not genai:
+            logger.warning("Google GenAI library not installed.")
+            # If we are here, we are NOT in Bedrock/Local mode, so this IS an error if we expect Gemini
+            return
+            
+        if not self.settings.gemini_api_key or "YOUR_API_KEY" in self.settings.gemini_api_key:
+             # We don't raise here to allow startup, but main.py will check before query
+             logger.warning("Gemini API Key missing or invalid in settings.")
+             return
+
+        logger.info(f"Configuring Gemini API Key: {self.settings.gemini_api_key[:5]}...")
+        self.api_key = self.settings.gemini_api_key
+        
+        try:
+            self.client = genai.Client(api_key=self.api_key)
+            logger.info("GenAI Client initialized successfully.")
+        except Exception as e:
+            logger.error(f"GenAI Client init failed: {e}")
+
+        self.model_id = self.settings.base_model
+        
+        # Configure Safety Settings
+        if types:
+             self.safety_settings = [
                 types.SafetySetting(
                     category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
                     threshold=types.HarmBlockThreshold.BLOCK_NONE,
@@ -89,126 +196,29 @@ class LLMAgent:
                     threshold=types.HarmBlockThreshold.BLOCK_NONE,
                 ),
             ]
-        else:
-            self.safety_settings = []
-        
-        if self.use_local:
-            logger.info(f"Using local Ollama model: {self.local_model}")
-        elif self.use_bedrock and HAS_BEDROCK:
-            # Initialize Bedrock client for single agent mode
-            try:
-                bedrock_token = os.getenv('AWS_BEARER_TOKEN_BEDROCK')
-                if bedrock_token:
-                    # boto3 auto-detects AWS_BEARER_TOKEN_BEDROCK env var
-                    self.bedrock_client = ChatBedrockConverse(
-                        model_id=self.bedrock_sql_writer,
-                        region_name=self.bedrock_region,
-                        temperature=0.0,
-                    )
-                    logger.info(f"Using AWS Bedrock model: {self.bedrock_sql_writer}")
-                else:
-                    logger.warning("AWS_BEARER_TOKEN_BEDROCK not set. Bedrock features disabled.")
-            except Exception as e:
-                logger.error(f"Failed to initialize Bedrock client: {e}")
-                self.bedrock_client = None
-        else:
-            if self.anthropic_key:
-                self.anthropic_client = anthropic.Anthropic(api_key=self.anthropic_key)
-                logger.info("Anthropic client initialized")
-
-        # Semantic Retrieval Components
-        self.sql_retriever = None
-        self._setup_semantic_engine()
-
-    def _setup_semantic_engine(self):
-        """Initializes LlamaIndex ObjectIndex for semantic table retrieval."""
-        if not HAS_LLAMA_INDEX:
-            return
-
-        try:
-            self.last_thoughts.append("Initializing Semantic Engine...")
-            # Use the persistent DB file created by DatabaseService
-            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            db_path = f"sqlite:///{os.path.join(base_dir, 'medical.db')}"
-            
-            engine = create_engine(db_path)
-            sql_database = SQLDatabase(engine)
-            
-            # Load metadata
-            meta_path = os.path.join(base_dir, "data", "semantic_metadata.json")
-            table_descriptions = {}
-            if os.path.exists(meta_path):
-                with open(meta_path, 'r') as f:
-                    meta = json.load(f)
-                    for item in meta:
-                        table_descriptions[item['table_name']] = item['description']
-
-            # Create Table Schema Objects
-            table_node_mapping = SQLTableNodeMapping(sql_database)
-            table_schema_objs = []
-            for table_name in sql_database.get_usable_table_names():
-                table_schema_objs.append(
-                    SQLTableSchema(
-                        table_name=table_name, 
-                        context_str=table_descriptions.get(table_name, "Medical data table")
-                    )
-                )
-
-            # Initialize Embedding Model (Local)
-            Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
-            
-            # Create Object Index
-            self.obj_index = ObjectIndex.from_objects(
-                table_schema_objs,
-                table_node_mapping,
-                VectorStoreIndex,
-            )
-            self.sql_retriever = self.obj_index.as_retriever(similarity_top_k=3)
-            logger.info("Semantic SQL Retriever initialized.")
-            
-        except Exception as e:
-            logger.error(f"Failed to setup semantic engine: {e}")
-            self.sql_retriever = None
-
-    def configure(self, api_key: str):
-        """Configures the Gemini API client."""
-        if self.use_local:
-            logger.info("Local model mode enabled - API key not required")
-            return
-        
-        if not HAS_GOOGLE_GENAI or not genai:
-            logger.warning("Google GenAI not available. Skipping API key configuration.")
-            return
-            
-        self.api_key = api_key
-        # genai.configure(api_key=self.api_key) # Old way
-        self.client = genai.Client(api_key=self.api_key)
-        # self.model = genai.GenerativeModel('gemma-3-27b-it', safety_settings=self.safety_settings) # Old way
-        self.model_id = 'gemini-1.5-flash' # Using a known stable model for now, 'gemma-3' might be specific
-        logger.info("Configured Google Gemini API (v2 Client)")
 
     def get_available_models(self) -> list:
         """Returns a list of available models based on configuration."""
-        if self.use_local:
+        if self.settings.use_local_model:
             return [
                 {"id": "qwen2.5-coder:7b", "name": "Qwen 2.5 Coder (7B) - RECOMMENDED"},
                 {"id": "sqlcoder:7b", "name": "Defog SQLCoder (7B)"},
                 {"id": "llama3.1", "name": "Llama 3.1 (8B)"},
                 {"id": "qwen3:latest", "name": "Qwen 3 (7B)"},
             ]
-        elif self.use_bedrock:
+        elif self.settings.use_bedrock:
             # Return Bedrock models with user-friendly names
             return [
                 {
-                    "id": self.bedrock_sql_writer,
+                    "id": self.settings.base_model,
                     "name": "Claude 3.5 Sonnet v2 (SQL Writer) - RECOMMENDED"
                 },
                 {
-                    "id": self.bedrock_navigator,
+                    "id": self.settings.bedrock_navigator_model,
                     "name": "Claude 3.5 Haiku (Schema Navigator)"
                 },
                 {
-                    "id": self.bedrock_critic,
+                    "id": self.settings.bedrock_critic_model,
                     "name": "Claude 3.5 Haiku (Critic)"
                 },
             ]
@@ -221,24 +231,31 @@ class LLMAgent:
 
     def set_model(self, model_id: str):
         """Switches the active model."""
-        if self.use_local:
+        logger.debug(f"set_model called with: {model_id}")
+        if self.settings.use_local_model:
             # Allow switching local models if they are in the supported list
             supported_local = [m['id'] for m in self.get_available_models()]
             if model_id in supported_local:
-                self.local_model = model_id
+                # In local mode we don't store "local_model" on self anymore, we just return it dynamically
+                # or we could store it if we added it to self in init.
+                # Since we removed it from init, let's update _call_ollama to take it or store it here.
+                # Correct approach: Update _call_ollama to use model_id or default to setting
+                self.model = model_id # Use generic model field
                 logger.info(f"Switched local model to: {model_id}")
             else:
-                logger.warning(f"Attempted to switch to unsupported local model: {model_id}. Keeping {self.local_model}")
+                logger.warning(f"Attempted to switch to unsupported local model: {model_id}.")
             return
 
         # Handle Bedrock Models
-        if self.use_bedrock and 'anthropic' in model_id:
+        if self.settings.use_bedrock and 'anthropic' in model_id:
+            logger.debug("Routing to Bedrock")
             self.model = model_id
             logger.info(f"Switched Bedrock model to: {model_id}")
             return
 
         # Handle Anthropic Models
         if 'claude' in model_id:
+            logger.debug("Routing to Anthropic")
             if not self.anthropic_client:
                  logger.warning("Anthropic API Key not found. Please set ANTHROPIC_API_KEY.")
             self.model = model_id # Just store the ID for dispatch
@@ -246,7 +263,9 @@ class LLMAgent:
             return
 
         # Handle Gemini Models
+        logger.debug(f"Routing to Gemini. key set? {bool(self.api_key)}")
         if not self.api_key:
+             logger.error("Raising ValueError: Google API Key not configured.")
              raise ValueError("Google API Key not configured.")
         
         # In Google GenAI v2, we just use the model ID string with the client
@@ -258,9 +277,12 @@ class LLMAgent:
         if not HAS_OLLAMA or not ollama:
             raise ValueError("Ollama not available. Install with: pip install ollama")
         
+        # Use selected model or default from settings
+        target_model = self.model if self.model else self.settings.local_model_name
+        
         try:
             response = ollama.chat(
-                model=self.local_model,
+                model=target_model,
                 messages=[{
                     'role': 'user',
                     'content': prompt
@@ -273,8 +295,8 @@ class LLMAgent:
             return response['message']['content'].strip()
         except Exception as e:
             logger.error(f"Ollama API call failed: {e}")
-            logger.error(f"Make sure Ollama is running and model '{self.local_model}' is installed")
-            logger.error(f"Install with: ollama pull {self.local_model}")
+            logger.error(f"Make sure Ollama is running and model '{target_model}' is installed")
+            logger.error(f"Install with: ollama pull {target_model}")
             raise e
 
     def _call_anthropic(self, prompt: str) -> str:
@@ -304,14 +326,14 @@ class LLMAgent:
         try:
             from langchain_core.messages import HumanMessage
             
-            # Use the current model if set, otherwise default to SQL writer
-            model_id = self.model if isinstance(self.model, str) and 'anthropic' in self.model else self.bedrock_sql_writer
+            # Use the current model if set, otherwise default to SQL writer from settings
+            model_id = self.model if isinstance(self.model, str) and 'anthropic' in self.model else self.settings.sql_writer_model
             
             # Update client model if needed
             if self.bedrock_client.model_id != model_id:
                 self.bedrock_client = ChatBedrockConverse(
                     model_id=model_id,
-                    region_name=self.bedrock_region,
+                    region_name=self.settings.aws_bedrock_region,
                     temperature=0.0,
                 )
             
@@ -326,9 +348,9 @@ class LLMAgent:
         # Format history for context
         history_context = ""
         if history:
-            # Take last 5 messages, excluding the current one if it's already there
-            relevant_history = history[-5:] 
-            history_str = "\n".join([f"{msg['role']}: {msg['text']}" for msg in relevant_history])
+            # Take last 5 messages for context
+            relevant_history = history[-5:]
+            history_str = "\n".join([f"{msg['role']}: {msg.get('text', '')}" for msg in relevant_history])
             history_context = f"Chat History:\n{history_str}\n\n"
 
         # Reset thoughts for this new query
@@ -404,16 +426,16 @@ Rules:
 User Request: {user_query}
 """
         logger.debug(f"Generating SQL with model: {self.model}")
-        model_display = self.local_model if self.use_local else ('Bedrock' if self.use_bedrock else 'Cloud API')
+        model_display = self.settings.local_model_name if self.settings.use_local_model else ('Bedrock' if self.settings.use_bedrock else 'Cloud API')
         self.last_thoughts.append(f"Selected Model: {model_display}")
         self.last_thoughts.append("Generating SQL query...")
         try:
-            if self.use_local:
+            if self.settings.use_local_model:
                 sql = self._call_ollama(prompt)
-            elif self.use_bedrock and self.bedrock_client:
+            elif self.settings.use_bedrock and self.bedrock_client:
                 # AWS Bedrock Case
                 sql = self._call_bedrock(prompt)
-            elif isinstance(self.model, str) and 'claude' in self.model: 
+            elif isinstance(self.model, str) and 'anthropic' in self.model.lower():
                 # Anthropic Case
                 sql = self._call_anthropic(prompt)
             else:
@@ -429,7 +451,7 @@ User Request: {user_query}
                          raise ValueError("Google Client not initialized")
 
                 # Use self.model which might be a string ID now, or self.model_id
-                target_model = self.model if isinstance(self.model, str) else 'gemini-1.5-flash'
+                target_model = self.model if isinstance(self.model, str) else self.settings.base_model
                 
                 response = self.client.models.generate_content(
                     model=target_model,
@@ -485,11 +507,11 @@ User Request: {user_query}
         )
 
         try:
-            if self.use_local:
+            if self.settings.use_local_model:
                 return self._call_ollama(prompt)
-            elif self.use_bedrock and self.bedrock_client:
+            elif self.settings.use_bedrock and self.bedrock_client:
                 return self._call_bedrock(prompt)
-            elif isinstance(self.model, str) and 'claude' in self.model:
+            elif isinstance(self.model, str) and 'anthropic' in self.model.lower():
                 return self._call_anthropic(prompt)
             else:
                 if not HAS_GOOGLE_GENAI or not genai:
@@ -498,7 +520,7 @@ User Request: {user_query}
                 if not hasattr(self, 'client') or not self.client:
                      self.client = genai.Client(api_key=self.api_key)
                 
-                target_model = self.model if isinstance(self.model, str) else 'gemini-1.5-flash'
+                target_model = self.model if isinstance(self.model, str) else self.settings.base_model
                 response = self.client.models.generate_content(
                     model=target_model,
                     contents=prompt,
@@ -630,13 +652,13 @@ Guidelines:
 Return ONLY the chart type name (lowercase, no explanation).
 """
         try:
-            if self.use_local:
+            if self.settings.use_local_model:
                 vis_type = self._call_ollama(prompt).lower()
             else:
                 if not hasattr(self, 'client') or not self.client:
                     return "table"
                 
-                target_model = self.model if isinstance(self.model, str) else 'gemini-1.5-flash'
+                target_model = self.model if isinstance(self.model, str) else self.settings.base_model
                 response = self.client.models.generate_content(
                     model=target_model,
                     contents=prompt
@@ -705,18 +727,23 @@ Return ONLY the plan steps, no additional commentary.
 """
         
         try:
-            if self.use_local:
+            if self.settings.use_local_model:
                 plan = self._call_ollama(prompt)
-            elif isinstance(self.model, str) and 'claude' in self.model:
-                plan = self._call_anthropic(prompt)
+            elif self.settings.use_bedrock or (isinstance(self.model, str) and 'anthropic' in self.model.lower()):
+                # Use Bedrock or direct Anthropic
+                if self.settings.use_bedrock:
+                    plan = self._call_bedrock(prompt)
+                else:
+                    plan = self._call_anthropic(prompt)
             else:
+                # Gemini fallback
                 if not HAS_GOOGLE_GENAI or not genai:
                     return "Step 1: Query the database (GenAI not available for detailed planning)."
                 
                 if not hasattr(self, 'client') or not self.client:
                     self.client = genai.Client(api_key=self.api_key)
                 
-                target_model = self.model if isinstance(self.model, str) else 'gemini-1.5-flash'
+                target_model = self.model if isinstance(self.model, str) else self.settings.base_model
                 response = self.client.models.generate_content(
                     model=target_model,
                     contents=prompt,
@@ -760,18 +787,23 @@ Be concise and actionable. Return your analysis as plain text.
 """
         
         try:
-            if self.use_local:
+            if self.settings.use_local_model:
                 reflection = self._call_ollama(prompt)
-            elif isinstance(self.model, str) and 'claude' in self.model:
-                reflection = self._call_anthropic(prompt)
+            elif self.settings.use_bedrock or (isinstance(self.model, str) and 'anthropic' in self.model.lower()):
+                # Use Bedrock or direct Anthropic
+                if self.settings.use_bedrock:
+                    reflection = self._call_bedrock(prompt)
+                else:
+                    reflection = self._call_anthropic(prompt)
             else:
+                # Gemini fallback
                 if not HAS_GOOGLE_GENAI or not genai:
                     return "Unable to reflect on SQL error (GenAI not available)."
                 
                 if not hasattr(self, 'client') or not self.client:
                     self.client = genai.Client(api_key=self.api_key)
                 
-                target_model = self.model if isinstance(self.model, str) else 'gemini-1.5-flash'
+                target_model = self.model if isinstance(self.model, str) else self.settings.base_model
                 response = self.client.models.generate_content(
                     model=target_model,
                     contents=prompt,

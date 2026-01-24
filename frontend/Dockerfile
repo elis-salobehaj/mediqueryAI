@@ -24,11 +24,14 @@ FROM node:23-alpine AS builder
 
 WORKDIR /app
 
+# Install pnpm
+RUN npm install -g pnpm
+
 # Copy package files
-COPY package*.json ./
+COPY package.json pnpm-lock.yaml ./
 
 # Install dependencies
-RUN npm install
+RUN pnpm install --frozen-lockfile
 
 # Copy source code
 COPY . .
@@ -36,17 +39,15 @@ COPY . .
 # Build the app
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
-RUN npm run build
+RUN pnpm run build
 
-# ==========================================
-# Target: production (Nginx Server)
-# ==========================================
+# Stage 2: Production
 FROM nginx:alpine AS production
 
-# Copy built files from builder stage
+# Copy built assets
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy nginx configuration
+# Copy nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
