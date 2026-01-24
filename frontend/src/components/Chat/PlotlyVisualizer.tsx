@@ -197,7 +197,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
               type: 'bar',
               x: Array.from(aggMap.keys()),
               y: Array.from(aggMap.values()),
-              marker: { color: '#00F0FF', line: { color: '#00F0FF', width: 1 } }
+              marker: { color: colors.brand, line: { color: colors.brand, width: 1 } }
             }],
             layout: { ...baseLayout, title: `Bar Chart (${useCount ? 'Count' : bestValueCol})`, xaxis: { ...baseLayout.xaxis, title: xCol }, yaxis: { ...baseLayout.yaxis, title: useCount ? 'Count' : bestValueCol } }
           };
@@ -208,7 +208,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             type: 'bar',
             x: getColumn(xCol),
             y: getColumn(yCol),
-            marker: { color: '#00F0FF', line: { color: '#00F0FF', width: 1 } }
+            marker: { color: colors.brand, line: { color: colors.brand, width: 1 } }
           }],
           layout: { ...baseLayout, title: 'Bar Chart', xaxis: { ...baseLayout.xaxis, title: xCol }, yaxis: { ...baseLayout.yaxis, title: yCol } }
         };
@@ -236,7 +236,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             labels: labels,
             values: values,
             hole: selectedChartType === 'donut' ? 0.4 : 0,
-            marker: { colors: ['#00F0FF', '#FF0055', '#00FF88', '#FFD700', '#FF6B6B', '#4ECDC4'] },
+            marker: { colors: colors.accents },
             textfont: { color: '#000' },
             textinfo: 'label+percent',
             hoverinfo: 'label+value+percent'
@@ -368,7 +368,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             x: getColumn(xCol),
             y: getColumn(yCol),
             z: getColumn(zCol),
-            colorscale: [[0, '#020408'], [0.5, '#00F0FF'], [1, '#FF0055']],
+            colorscale: [[0, colors.surface], [0.5, colors.brand], [1, colors.accent3]],
             contours: { coloring: 'heatmap' }
           }],
           layout: { ...baseLayout, title: 'Contour Plot', xaxis: { ...baseLayout.xaxis, title: xCol }, yaxis: { ...baseLayout.yaxis, title: yCol } }
@@ -444,16 +444,16 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             x: getColumn(xCol),
             y: getColumn(yCol),
             z: [getColumn(zCol)],
-            colorscale: [[0, '#020408'], [0.5, '#00F0FF'], [1, '#FF0055']]
+            colorscale: [[0, colors.surface], [0.5, colors.brand], [1, colors.accent3]]
           }],
           layout: {
             ...baseLayout,
             title: '3D Surface Plot',
             scene: {
-              xaxis: { title: xCol, gridcolor: 'rgba(0, 240, 255, 0.2)' },
-              yaxis: { title: yCol, gridcolor: 'rgba(0, 240, 255, 0.2)' },
-              zaxis: { title: zCol, gridcolor: 'rgba(0, 240, 255, 0.2)' },
-              bgcolor: 'rgba(2, 4, 8, 0.5)'
+              xaxis: { title: xCol, gridcolor: colors.borderSubtle },
+              yaxis: { title: yCol, gridcolor: colors.borderSubtle },
+              zaxis: { title: zCol, gridcolor: colors.borderSubtle },
+              bgcolor: 'transparent'
             }
           }
         };
@@ -502,7 +502,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
               labels: labels,
               parents: parents,
               values: values,
-              marker: { colors: ['#00F0FF', '#FF0055', '#00FF88', '#FFD700', '#FF6B6B', '#4ECDC4'] },
+              marker: { colors: colors.accents },
               textfont: { color: '#000' },
               branchvalues: 'total'
             }],
@@ -516,7 +516,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
               labels: getColumn(labelCol),
               parents: Array(rows.length).fill(''),
               values: rows.map(getValue),
-              marker: { colors: ['#00F0FF', '#FF0055', '#00FF88', '#FFD700', '#FF6B6B', '#4ECDC4'] },
+              marker: { colors: colors.accents },
               textfont: { color: '#000' }
             }],
             layout: { ...baseLayout, title: `Sunburst Chart (${useCount ? 'Count' : bestValueCol})` }
@@ -566,7 +566,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
               labels: labels,
               parents: parents,
               values: values,
-              marker: { colors: ['#00F0FF', '#FF0055', '#00FF88', '#FFD700', '#FF6B6B', '#4ECDC4'] },
+              marker: { colors: colors.accents },
               textfont: { color: '#000' },
               branchvalues: 'total'
             }],
@@ -580,7 +580,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
               labels: getColumn(labelCol),
               parents: Array(rows.length).fill(''),
               values: rows.map(getValue),
-              marker: { colors: ['#00F0FF', '#FF0055', '#00FF88', '#FFD700', '#FF6B6B', '#4ECDC4'] },
+              marker: { colors: colors.accents },
               textfont: { color: '#000' }
             }],
             layout: { ...baseLayout, title: `Treemap (${useCount ? 'Count' : bestValueCol})` }
@@ -647,8 +647,8 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             mode: 'number',
             value: value,
             domain: { x: [0, 1], y: [0, 1] },
-            title: { text: prefix, font: { color: '#00F0FF' } },
-            number: { font: { color: '#00F0FF', size: 60 }, valueformat: shouldAverage ? ".1f" : "d" }
+            title: { text: prefix, font: { color: colors.brand } },
+            number: { font: { color: colors.brand, size: 60 }, valueformat: shouldAverage ? ".1f" : "d" }
           }],
           layout: { ...baseLayout, title: 'KPI Indicator' }
         };
@@ -676,17 +676,17 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             mode: 'gauge+number',
             value: value,
             gauge: {
-              axis: { range: [null, axisRange], tickcolor: '#00F0FF' },
-              bar: { color: '#00F0FF' },
-              bgcolor: 'rgba(2, 4, 8, 0.5)',
+              axis: { range: [null, axisRange], tickcolor: colors.brand },
+              bar: { color: colors.brand },
+              bgcolor: 'transparent',
               borderwidth: 2,
-              bordercolor: '#00F0FF',
+              bordercolor: colors.brand,
               steps: [
-                { range: [0, axisRange * 0.5], color: 'rgba(0, 240, 255, 0.2)' },
-                { range: [axisRange * 0.5, axisRange], color: 'rgba(0, 240, 255, 0.4)' }
+                { range: [0, axisRange * 0.5], color: `${colors.brand}33` },
+                { range: [axisRange * 0.5, axisRange], color: `${colors.brand}66` }
               ]
             },
-            title: { text: useCount ? 'Count' : `Avg ${bestValueCol}`, font: { color: '#00F0FF' } }
+            title: { text: useCount ? 'Count' : `Avg ${bestValueCol}`, font: { color: colors.brand } }
           }],
           layout: { ...baseLayout, title: 'Gauge Chart' }
         };
@@ -701,7 +701,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
         return {
           plotData: [{
             type: 'parcoords',
-            line: { color: '#00F0FF', colorscale: [[0, '#020408'], [0.5, '#00F0FF'], [1, '#FF0055']] },
+            line: { color: colors.brand, colorscale: [[0, colors.surface], [0.5, colors.brand], [1, colors.accent3]] },
             dimensions: dimensions
           }],
           layout: { ...baseLayout, title: 'Parallel Coordinates' }
@@ -718,7 +718,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
           plotData: [{
             type: 'splom',
             dimensions: dimensions,
-            marker: { color: '#00F0FF', size: 5, line: { color: '#fff', width: 0.5 } }
+            marker: { color: colors.brand, size: 5, line: { color: '#fff', width: 0.5 } }
           }],
           layout: { ...baseLayout, title: 'Scatter Plot Matrix (SPLOM)' }
         };
@@ -789,7 +789,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             locationmode: 'USA-states',
             locations: locations,
             text: sizes.map((v, i) => `${locations[i]}: ${v}`),
-            marker: { size: markerSizes, color: '#00F0FF', line: { color: '#fff', width: 1 } }
+            marker: { size: markerSizes, color: colors.brand, line: { color: '#fff', width: 1 } }
           }],
           layout: {
             ...baseLayout,
@@ -799,7 +799,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
               projection: { type: 'albers usa' },
               showlakes: true,
               lakecolor: 'rgba(0, 240, 255, 0.1)',
-              bgcolor: 'rgba(2, 4, 8, 0.5)'
+              bgcolor: 'transparent'
             }
           }
         };
@@ -841,7 +841,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
 
   if (!plotData || plotData.length === 0) {
     return (
-      <div className="text-center text-[#00F0FF] p-4 border border-[#00F0FF]/30 rounded">
+      <div className="text-center p-4 border rounded" style={{ color: colors.brand, borderColor: `${colors.brand}4D` }}>
         No data available for visualization
       </div>
     );

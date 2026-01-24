@@ -14,7 +14,7 @@
 
 | Plan | Status | Priority | Last Updated | Progress | Related Files |
 |------|--------|----------|--------------|----------|---------------|
-| [Frontend UI Overhaul](plans/active/frontend_ui_overhaul.md) | In Progress | High | 2026-01-24 | 5/7 phases ✅ | `frontend/src/index.css`, `frontend/src/components/*` |
+| [Frontend UI Overhaul](plans/active/frontend_ui_overhaul.md) | In Progress | High | 2026-01-24 | 6/7 phases ✅ | `frontend/src/index.css`, `frontend/src/components/*` |
 | [LangGraph Refactor](plans/active/langgraph-refactor.md) | In Progress | High | 2026-01-22 | 2/5 steps ✅ | `backend/services/langgraph_agent.py` |
 
 **Current Focus**: 
