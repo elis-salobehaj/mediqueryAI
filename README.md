@@ -59,13 +59,13 @@ This will:
 ### Core Capabilities
 
 - 🤖 **Natural Language Queries**: Ask questions in plain English about healthcare data
-- 📊 **60+ Interactive Visualizations**: Powered by Plotly.js with real-time chart type switching
-- 🧠 **Explainable AI**: View the agent's step-by-step thinking process and SQL generation logic
-- 🔐 **Authentication & Security**: Sci-Fi themed Login/Register, JWT protection, and GitHub Secrets integration
-- 💬 **Persistent Chat History**: Context-aware conversations suitable for follow-up questions
-- 🎨 **Futuristic HUD Interface**: Cyberpunk-inspired dark theme with glassmorphism effects
-- 🔄 **Smart Visualization Selection**: AI-powered chart type recommendation based on data structure
-- 🎯 **Hybrid LLM Support**: Local models (Ollama) or Cloud (Google Gemini)
+- 🎨 **Premium OKLCH Interface**: Cyberpunk-inspired design with hardware-accelerated color spaces and glassmorphism.
+- 🌓 **Dynamic Theme Engine**: Support for **Light**, **Dark**, **Drilling Slate**, and **System** themes.
+- 📊 **Theme-Aware Visualizations**: 60+ Plotly.js charts that blend seamlessly with the chosen UI theme.
+- 🧠 **Explainable AI**: View the agent's step-by-step thinking process and SQL generation logic.
+- 🔐 **Authentication & Security**: Sci-Fi themed Login/Register, JWT protection, and GitHub Secrets integration.
+- 💬 **Persistent User Preferences**: Chat history, UI toggles (Fast/Multi-Agent), and Theme selection persist across sessions.
+- 🎯 **Hybrid LLM Support**: Local models (Ollama) or Cloud (Google Bedrock/Gemini).
 - 🐳 **Docker Ready**: One-command deployment with Docker Compose
 - 🧩 **Smart Schema Inference**: Auto-detects demographics vs. illness queries to optimize SQL joins (e.g. searching both 'chronic_conditions' and 'diagnosis' for ambiguous medical terms)
 
@@ -149,8 +149,9 @@ See [TESTING_GUIDE.md](TESTING_GUIDE.md) for detailed scenarios.
 ### Frontend
 - **React 19** with TypeScript
 - **Vite** for blazing-fast development
-- **Plotly.js** for interactive visualizations (60+ chart types)
-- **Tailwind CSS** for styling
+- **OKLCH Design System** for vibrant, hardware-accelerated colors and gradients
+- **Plotly.js** with **useChartColors** hook for dynamic, theme-aware visualizations
+- **Tailwind CSS** with CSS Variables for semantic theming
 - **Nginx** for production serving
 
 ### Backend
