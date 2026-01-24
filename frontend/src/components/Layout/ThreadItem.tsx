@@ -127,7 +127,7 @@ const ThreadItem: React.FC<ThreadItemProps> = ({
           <button
             onClick={() => setShowMenu(!showMenu)}
             className={`
-              p-1 rounded-md hover:bg-[var(--bg-tertiary)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)]
+              p-1 rounded-md hover:bg-[var(--bg-tertiary)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] cursor-pointer
               ${showMenu ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity
             `}
           >
@@ -139,26 +139,26 @@ const ThreadItem: React.FC<ThreadItemProps> = ({
             <div className="absolute right-0 top-full mt-1 w-48 bg-[var(--bg-secondary)] border border-[var(--border-subtle)] rounded-lg shadow-xl z-50 overflow-hidden animate-fade-in">
               <button
                 onClick={() => { onShare(thread.id); setShowMenu(false); }}
-                className="w-full text-left px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] flex items-center gap-2"
+                className="w-full text-left px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] flex items-center gap-2 cursor-pointer"
               >
                 <FiShare2 size={14} /> Share conversation
               </button>
               <button
                 onClick={() => { onRename(thread.id, editTitle); setIsRenaming(true); setShowMenu(false); }}
-                className="w-full text-left px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] flex items-center gap-2"
+                className="w-full text-left px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] flex items-center gap-2 cursor-pointer"
               >
                 <FiEdit2 size={14} /> Rename
               </button>
               <button
                 onClick={() => { onPin(thread.id, !thread.pinned); setShowMenu(false); }}
-                className="w-full text-left px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] flex items-center gap-2"
+                className="w-full text-left px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] flex items-center gap-2 cursor-pointer"
               >
                 <RiPushpinLine size={14} /> {thread.pinned ? 'Unpin' : 'Pin'}
               </button>
               <div className="h-px bg-[var(--border-subtle)] my-1" />
               <button
                 onClick={() => { onDelete(thread.id); setShowMenu(false); }}
-                className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-500/10 flex items-center gap-2"
+                className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-500/10 flex items-center gap-2 cursor-pointer"
               >
                 <FiTrash2 size={14} /> Delete
               </button>

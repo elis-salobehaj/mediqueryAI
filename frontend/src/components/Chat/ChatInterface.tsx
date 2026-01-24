@@ -142,7 +142,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, theme }) => {
                             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
                             exportToCSV(msg.data.data, msg.data.columns, `mediquery-${timestamp}`);
                           }}
-                          className="flex items-center gap-2 text-xs text-[var(--accent-primary)] hover:underline"
+                          className="flex items-center gap-2 text-xs text-[var(--accent-primary)] hover:underline cursor-pointer"
                         >
                           <FiDownload /> Export CSV
                         </button>

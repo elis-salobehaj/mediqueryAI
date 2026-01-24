@@ -73,7 +73,7 @@ const InputBar: React.FC<InputBarProps> = ({
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowOptions(!showOptions)}
-                className={`btn-icon p-2 rounded-full hover:bg-[var(--bg-tertiary)] ${showOptions ? 'text-[var(--accent-primary)] bg-[var(--bg-tertiary)]' : ''}`}
+                className={`btn-icon p-2 rounded-full hover:bg-[var(--bg-tertiary)] cursor-pointer ${showOptions ? 'text-[var(--accent-primary)] bg-[var(--bg-tertiary)]' : ''}`}
                 title="Model Settings"
               >
                 <FiMoreHorizontal size={18} />
@@ -97,7 +97,7 @@ const InputBar: React.FC<InputBarProps> = ({
                   {/* Fast Mode Toggle */}
                   <button
                     onClick={() => setFastMode(!fastMode)}
-                    className={`text-xs px-2 py-0.5 rounded-full transition-colors font-medium border ${fastMode ? 'bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border-[var(--accent-primary)]/20' : 'text-[var(--text-tertiary)] border-transparent hover:bg-[var(--bg-tertiary)]'}`}
+                    className={`text-xs px-2 py-0.5 rounded-full transition-colors font-medium border cursor-pointer ${fastMode ? 'bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border-[var(--accent-primary)]/20' : 'text-[var(--text-tertiary)] border-transparent hover:bg-[var(--bg-tertiary)]'}`}
                     title="Fast Mode uses simpler models for speed"
                   >
                     ⚡ Fast
@@ -106,7 +106,7 @@ const InputBar: React.FC<InputBarProps> = ({
                   {/* Multi-Agent Toggle */}
                   <button
                     onClick={() => setMultiAgent(!multiAgent)}
-                    className={`text-xs px-2 py-0.5 rounded-full transition-colors font-medium border ${multiAgent ? 'bg-purple-500/10 text-purple-600 border-purple-500/20' : 'text-[var(--text-tertiary)] border-transparent hover:bg-[var(--bg-tertiary)]'}`}
+                    className={`text-xs px-2 py-0.5 rounded-full transition-colors font-medium border cursor-pointer ${multiAgent ? 'bg-purple-500/10 text-purple-600 border-purple-500/20' : 'text-[var(--text-tertiary)] border-transparent hover:bg-[var(--bg-tertiary)]'}`}
                     title="Multi-Agent Mode uses specialized agents"
                   >
                     🤖 Agents

@@ -27,7 +27,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ theme, setTheme, onClose, i
         <div className="space-y-1">
           <button
             onClick={() => setTheme('light')}
-            className={`w-full flex items-center justify-between px-3 py-2 rounded-md hover:bg-[var(--bg-tertiary)] text-sm transition-colors ${theme === 'light' ? 'text-[var(--accent-primary)] bg-[var(--bg-tertiary)]' : 'text-[var(--text-secondary)]'}`}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-md hover:bg-[var(--bg-tertiary)] text-sm transition-colors cursor-pointer ${theme === 'light' ? 'text-[var(--accent-primary)] bg-[var(--bg-tertiary)]' : 'text-[var(--text-secondary)]'}`}
           >
             <div className="flex items-center gap-2">
               <FiSun size={16} />
@@ -38,7 +38,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ theme, setTheme, onClose, i
 
           <button
             onClick={() => setTheme('dark')}
-            className={`w-full flex items-center justify-between px-3 py-2 rounded-md hover:bg-[var(--bg-tertiary)] text-sm transition-colors ${theme === 'dark' ? 'text-[var(--accent-primary)] bg-[var(--bg-tertiary)]' : 'text-[var(--text-secondary)]'}`}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-md hover:bg-[var(--bg-tertiary)] text-sm transition-colors cursor-pointer ${theme === 'dark' ? 'text-[var(--accent-primary)] bg-[var(--bg-tertiary)]' : 'text-[var(--text-secondary)]'}`}
           >
             <div className="flex items-center gap-2">
               <FiMoon size={16} />
@@ -49,7 +49,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ theme, setTheme, onClose, i
 
           <button
             onClick={() => setTheme('drilling-slate')}
-            className={`w-full flex items-center justify-between px-3 py-2 rounded-md hover:bg-[var(--bg-tertiary)] text-sm transition-colors ${theme === 'drilling-slate' ? 'text-[var(--accent-primary)] bg-[var(--bg-tertiary)]' : 'text-[var(--text-secondary)]'}`}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-md hover:bg-[var(--bg-tertiary)] text-sm transition-colors cursor-pointer ${theme === 'drilling-slate' ? 'text-[var(--accent-primary)] bg-[var(--bg-tertiary)]' : 'text-[var(--text-secondary)]'}`}
           >
             <div className="flex items-center gap-2">
               <GiOilRig size={16} />
@@ -60,7 +60,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ theme, setTheme, onClose, i
 
           <button
             onClick={() => setTheme('system')}
-            className={`w-full flex items-center justify-between px-3 py-2 rounded-md hover:bg-[var(--bg-tertiary)] text-sm transition-colors ${theme === 'system' ? 'text-[var(--accent-primary)] bg-[var(--bg-tertiary)]' : 'text-[var(--text-secondary)]'}`}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-md hover:bg-[var(--bg-tertiary)] text-sm transition-colors cursor-pointer ${theme === 'system' ? 'text-[var(--accent-primary)] bg-[var(--bg-tertiary)]' : 'text-[var(--text-secondary)]'}`}
           >
             <div className="flex items-center gap-2">
               <FiMonitor size={16} />
@@ -72,10 +72,10 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ theme, setTheme, onClose, i
       </div>
 
       <div className="p-2">
-        <button className="w-full text-left px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] rounded-md">
+        <button className="w-full text-left px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] rounded-md cursor-pointer">
           Help & Support
         </button>
-        <button className="w-full text-left px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] rounded-md">
+        <button className="w-full text-left px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] rounded-md cursor-pointer">
           About {import.meta.env.VITE_APP_TITLE || 'MediqueryAI'}
         </button>
       </div>
