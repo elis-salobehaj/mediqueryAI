@@ -31,6 +31,17 @@ sys.modules["llama_index.core.indices.struct_store"] = MagicMock()
 sys.modules["llama_index.llms.ollama"] = MagicMock()
 sys.modules["llama_index.embeddings.huggingface"] = MagicMock()
 
+# Mock Google GenAI
+mock_google = MagicMock()
+sys.modules["google"] = mock_google
+sys.modules["google.genai"] = MagicMock()
+sys.modules["google.genai.types"] = MagicMock()
+sys.modules["google.api_core"] = MagicMock()
+
+# Mock AWS Bedrock
+sys.modules["langchain_aws"] = MagicMock()
+sys.modules["langchain_aws.chat_models"] = MagicMock()
+
 # Also mock specific classes if they are imported directly 'from x import Y'
 # Check llm_agent.py imports to be sure, but usually patching the parent module is enough 
 # IF the code does checks like `if sql_retriever:`

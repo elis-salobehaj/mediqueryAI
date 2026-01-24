@@ -5,10 +5,8 @@ Tests the multi-agent workflow with Claude 3.5 models.
 """
 import os
 import sys
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
+from pathlib import Path
+from config import settings
 
 def test_bedrock_import():
     """Test if langchain-aws is properly installed."""
@@ -46,19 +44,19 @@ def test_environment_variables():
     print("\n✓ Step 3: Testing environment variables...")
     
     required_vars = {
-        "USE_BEDROCK": os.getenv("USE_BEDROCK"),
-        "AWS_BEDROCK_REGION": os.getenv("AWS_BEDROCK_REGION"),
-        "AWS_BEARER_TOKEN_BEDROCK": os.getenv("AWS_BEARER_TOKEN_BEDROCK"),
-        "BEDROCK_SQL_WRITER_MODEL": os.getenv("BEDROCK_SQL_WRITER_MODEL"),
-        "BEDROCK_NAVIGATOR_MODEL": os.getenv("BEDROCK_NAVIGATOR_MODEL"),
-        "BEDROCK_CRITIC_MODEL": os.getenv("BEDROCK_CRITIC_MODEL"),
+        "USE_BEDROCK": settings.use_bedrock,
+        "AWS_BEDROCK_REGION": settings.aws_bedrock_region,
+        "AWS_BEARER_TOKEN_BEDROCK": settings.aws_bearer_token_bedrock,
+        "BEDROCK_SQL_WRITER_MODEL": settings.bedrock_sql_writer_model,
+        "BEDROCK_NAVIGATOR_MODEL": settings.bedrock_navigator_model,
+        "BEDROCK_CRITIC_MODEL": settings.bedrock_critic_model,
     }
     
     all_set = True
     for var_name, var_value in required_vars.items():
         if var_value:
             # Mask the bearer token for security
-            display_value = var_value if var_name != "AWS_BEARER_TOKEN_BEDROCK" else "***" + var_value[-8:]
+            display_value = str(var_value) if var_name != "AWS_BEARER_TOKEN_BEDROCK" else "***" + str(var_value)[-8:]
             print(f"  ✓ {var_name}: {display_value}")
         else:
             print(f"  ✗ {var_name}: NOT SET")
@@ -70,7 +68,8 @@ def test_langgraph_agent_import():
     """Test if the MultiAgentSQLGenerator can be imported."""
     print("\n✓ Step 4: Testing MultiAgentSQLGenerator import...")
     try:
-        sys.path.insert(0, os.path.dirname(__file__))
+        # Navigate up to backend root
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
         from services.langgraph_agent import MultiAgentSQLGenerator
         print("  ✓ MultiAgentSQLGenerator imported successfully")
         return True
@@ -84,16 +83,11 @@ def test_bedrock_llm_initialization():
     """Test if Bedrock LLMs can be initialized."""
     print("\n✓ Step 5: Testing Bedrock LLM initialization...")
     try:
-        sys.path.insert(0, os.path.dirname(__file__))
+        # Navigate up to backend root
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
         from services.langgraph_agent import MultiAgentSQLGenerator
-        from services.database import DatabaseService
-        from services.llm_agent import LLMAgent
-        
-        # Create a dummy database service
-        db_service = DatabaseService()
-        
-        # Create a dummy LLM agent (no parameters)
-        llm_agent = LLMAgent()
+        from services.database import db_service
+        from services.llm_agent import llm_agent
         
         # Initialize the agent with Bedrock config
         agent = MultiAgentSQLGenerator(db_service, llm_agent)
@@ -130,7 +124,8 @@ def test_agent_state_fields():
     """Test if AgentState has the new previous_sqls field."""
     print("\n✓ Step 6: Testing AgentState TypedDict fields...")
     try:
-        sys.path.insert(0, os.path.dirname(__file__))
+        # Navigate up to backend root
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
         from services.langgraph_agent import AgentState
         
         # Check if previous_sqls is in the type annotations

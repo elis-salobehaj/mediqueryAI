@@ -1,3 +1,4 @@
+import logging
 import sqlite3
 import json
 import time
@@ -5,8 +6,12 @@ import os
 import uuid
 from typing import List, Dict, Optional
 
-# Get retention hours from environment variable, default to 24 hours
-RETENTION_HOURS = int(os.getenv('CHAT_HISTORY_RETENTION_HOURS', '24'))
+from config import settings
+
+logger = logging.getLogger(__name__)
+
+# Get retention hours from centralized settings
+RETENTION_HOURS = settings.chat_history_retention_hours
 
 class ChatHistoryService:
     def __init__(self, db_path: str = "chat_history.db"):
@@ -150,7 +155,7 @@ class ChatHistoryService:
             conn.commit()
             conn.close()
         except Exception as e:
-            print(f"ERROR: Failed to save message: {e}")
+            logger.error(f"Failed to save message: {e}")
             pass
 
     def get_thread_messages(self, thread_id: str) -> List[Dict]:

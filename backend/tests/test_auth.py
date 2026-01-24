@@ -33,7 +33,7 @@ def test_login_failure():
     assert response.status_code == 401
 
 def test_protected_route_without_token():
-    response = client.get("/history")
+    response = client.get("/threads")
     assert response.status_code == 401
 
 def test_protected_route_with_token():
@@ -46,7 +46,7 @@ def test_protected_route_with_token():
     
     # Access protected route
     response = client.get(
-        "/history",
+        "/threads",
         headers={"Authorization": f"Bearer {token}"}
     )
     assert response.status_code == 200

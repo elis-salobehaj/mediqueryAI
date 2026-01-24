@@ -3,17 +3,26 @@ from services.chat_history import chat_history
 import time
 import os
 
-# Use a temp file for testing since _get_conn creates new connections
 TEST_DB = "test_chat.db"
-chat_history.db_path = TEST_DB
 
 @pytest.fixture(autouse=True)
-def setup_teardown():
-    # Setup: Init DB
+def setup_teardown(monkeypatch):
+    """Fixture to ensure each test uses a clean test database and restores state."""
+    # Setup
     if os.path.exists(TEST_DB):
         os.remove(TEST_DB)
+    
+    # Store original path
+    original_path = chat_history.db_path
+    
+    # Patch the singleton instance
+    monkeypatch.setattr(chat_history, "db_path", TEST_DB)
+    
+    # Re-initialize DB tables for the test DB
     chat_history._init_db()
+    
     yield
+    
     # Teardown
     if os.path.exists(TEST_DB):
         os.remove(TEST_DB)

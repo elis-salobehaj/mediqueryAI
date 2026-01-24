@@ -8,8 +8,10 @@ from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 from typing import Optional, Dict
 
+from config import settings
+
 # Configuration
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "supersecretkey") # Change in production!
+JWT_SECRET_KEY = settings.jwt_secret_key
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

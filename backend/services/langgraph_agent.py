@@ -14,9 +14,10 @@ Architecture follows DIN-SQL pattern with cross-model reflection.
 
 import time
 import logging
-import os
 from typing import TypedDict, Annotated, Sequence, Literal
 import operator
+
+from config import settings
 
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
 from langgraph.graph import StateGraph, END
@@ -93,17 +94,17 @@ class MultiAgentSQLGenerator:
         # Configuration
         default_config = {
             "timeout_seconds": 120,
-            "max_attempts": 3,
-            "schema_navigator_model": os.getenv("SCHEMA_NAVIGATOR_MODEL", "qwen2.5-coder:7b"),
-            "sql_writer_model": os.getenv("SQL_WRITER_MODEL", "sqlcoder:7b"),
-            "critic_model": os.getenv("CRITIC_MODEL", "llama3.1"),
-            "use_ollama": os.getenv("USE_LOCAL_MODEL", "true").lower() == "true",
-            "ollama_host": os.getenv("OLLAMA_HOST", "http://localhost:11434"),
-            "use_bedrock": os.getenv("USE_BEDROCK", "false").lower() == "true",
-            "bedrock_region": os.getenv("AWS_BEDROCK_REGION", "us-west-2"),
-            "bedrock_sql_writer_model": os.getenv("BEDROCK_SQL_WRITER_MODEL", "us.anthropic.claude-sonnet-4-5-20250514-v1:0"),
-            "bedrock_navigator_model": os.getenv("BEDROCK_NAVIGATOR_MODEL", "us.anthropic.claude-haiku-4-5-20250514-v1:0"),
-            "bedrock_critic_model": os.getenv("BEDROCK_CRITIC_MODEL", "us.anthropic.claude-haiku-4-5-20250514-v1:0"),
+            "max_attempts": 2,  # Reduced from 3 to 2 for Claude 4.5
+            "schema_navigator_model": settings.navigator_model,
+            "sql_writer_model": settings.sql_writer_model,
+            "critic_model": settings.critic_model,
+            "use_ollama": settings.active_provider == "local",
+            "ollama_host": settings.ollama_host,
+            "use_bedrock": settings.use_bedrock,
+            "bedrock_region": settings.aws_bedrock_region,
+            "bedrock_sql_writer_model": settings.bedrock_sql_writer_model,
+            "bedrock_navigator_model": settings.bedrock_navigator_model,
+            "bedrock_critic_model": settings.bedrock_critic_model,
         }
         self.config = {**default_config, **(config or {})}
         
@@ -115,9 +116,9 @@ class MultiAgentSQLGenerator:
     
     def _init_llms(self):
         """Initialize LangChain LLMs for each agent."""
-        google_api_key = os.getenv("GEMINI_API_KEY")
-        anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
-        bedrock_token = os.getenv("AWS_BEARER_TOKEN_BEDROCK")
+        google_api_key = settings.gemini_api_key
+        anthropic_api_key = settings.anthropic_api_key
+        bedrock_token = settings.aws_bearer_token_bedrock
         use_ollama = self.config["use_ollama"]
         use_bedrock = self.config["use_bedrock"]
         ollama_host = self.config["ollama_host"]

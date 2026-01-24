@@ -52,6 +52,7 @@ class TestMultiAgentWorkflow:
             "start_time": 0.0,
             "thoughts": [],
             "agent_mode": "multi-agent",
+            "previous_sqls": [],
         }
         
         assert state["original_query"] == "Test query"
@@ -62,8 +63,8 @@ class TestMultiAgentWorkflow:
     async def test_simple_query_execution(self, multi_agent):
         """Test full workflow with a simple query."""
         # Skip if no API keys configured
-        import os
-        if not os.getenv("GEMINI_API_KEY"):
+        from config import settings
+        if not settings.gemini_api_key:
             pytest.skip("GEMINI_API_KEY not configured")
         
         result = await multi_agent.ainvoke(
@@ -99,8 +100,13 @@ class TestMultiAgentWorkflow:
             "start_time": 0.0,
             "thoughts": [],
             "agent_mode": "multi-agent",
+            "previous_sqls": [],
         }
         
+        # Skip if no LLM configured
+        if not multi_agent.schema_navigator_llm:
+            pytest.skip("Schema Navigator LLM not configured")
+            
         result_state = multi_agent._schema_navigator_node(initial_state)
         
         assert "selected_tables" in result_state
@@ -128,6 +134,7 @@ class TestMultiAgentWorkflow:
             "start_time": time.time() - 2.0,  # 2 seconds ago
             "thoughts": [],
             "agent_mode": "multi-agent",
+            "previous_sqls": [],
         }
         
         assert multi_agent._should_continue(timeout_state) == "timeout"
@@ -149,6 +156,7 @@ class TestMultiAgentWorkflow:
             "start_time": time.time(),
             "thoughts": [],
             "agent_mode": "multi-agent",
+            "previous_sqls": [],
         }
         
         assert multi_agent._should_continue(max_attempts_state) == "max_attempts"
@@ -170,6 +178,7 @@ class TestMultiAgentWorkflow:
             "start_time": time.time(),
             "thoughts": [],
             "agent_mode": "multi-agent",
+            "previous_sqls": ["SELECT * FROM patients"],
         }
         
         assert multi_agent._should_continue(success_state) == "success"
@@ -182,7 +191,7 @@ class TestMultiAgentWorkflow:
         )
         
         assert multi_agent.config["timeout_seconds"] == 120
-        assert multi_agent.config["max_attempts"] == 3
+        assert multi_agent.config["max_attempts"] == 2
         assert "schema_navigator_model" in multi_agent.config
         assert "sql_writer_model" in multi_agent.config
         assert "critic_model" in multi_agent.config
@@ -210,6 +219,7 @@ class TestMultiAgentWorkflow:
             "start_time": 0.0,
             "thoughts": [],
             "agent_mode": "multi-agent",
+            "previous_sqls": ["SELECT * FROM invalid_table"],
         }
         
         result_state = multi_agent._reflect_node(state)

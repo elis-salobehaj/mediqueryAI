@@ -14,7 +14,7 @@
 
 | Plan | Status | Priority | Last Updated | Progress | Related Files |
 |------|--------|----------|--------------|----------|---------------|
-| [LangGraph Refactor](plans/active/langgraph-refactor.md) | In Progress | High | 2026-01-22 | 2/5 steps ✅ | `backend/services/langgraph_agent.py` |
+
 
 **Current Focus**: 
 - ✅ Pydantic Settings v2 configuration complete
@@ -49,6 +49,7 @@
 
 | Plan | Completed | Summary |
 |------|-----------|---------|
+| [LangGraph Refactor](plans/implemented/langgraph-refactor.md) | 2026-01-24 | Multi-agent LangGraph workflow refactor with AWS Bedrock integration |
 | [Frontend UI Overhaul](plans/implemented/frontend_ui_overhaul.md) | 2026-01-24 | OKLCH color migration, dynamic themes, theme-aware Plotly charts |
 | [MediqueryAI Features](plans/implemented/mediqueryai-features.md) | 2026-01-20 | CSV export + SQL Reflexion loop with retry logic |
 

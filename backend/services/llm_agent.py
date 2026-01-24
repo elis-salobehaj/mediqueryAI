@@ -471,16 +471,16 @@ User Request: {user_query}
             logger.debug(f"Cleaned SQL: {sql}")
             self.last_thoughts.append(f"Generated SQL: {sql}")
             return sql
-        except exceptions.ResourceExhausted:
-            logger.warning("Google API Rate Limit Exceeded")
-            return "RATE_LIMIT"
-        except exceptions.InvalidArgument:
-            logger.error("Google API Invalid Argument (Check API Key)")
-            return "INVALID_KEY"
-        except exceptions.GoogleAPICallError as e:
-            logger.error(f"Google API Error: {e}")
-            return f"API_ERROR: {str(e)}"
         except Exception as e:
+            if exceptions and isinstance(e, exceptions.ResourceExhausted):
+                logger.warning("Google API Rate Limit Exceeded")
+                return "RATE_LIMIT"
+            if exceptions and isinstance(e, exceptions.InvalidArgument):
+                logger.error("Google API Invalid Argument (Check API Key)")
+                return "INVALID_KEY"
+            if exceptions and isinstance(e, exceptions.GoogleAPICallError):
+                logger.error(f"Google API Error: {e}")
+                return f"API_ERROR: {str(e)}"
             logger.error(f"SQL generation failed: {e}")
             return None
 

@@ -1,68 +1,63 @@
 """
-Test script to verify chat history automatic deletion based on retention hours.
+Tests for chat history automatic deletion based on retention hours.
 """
 import time
-import sys
 import os
-
-# Add backend to path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+import pytest
 from services.chat_history import chat_history, RETENTION_HOURS
 
-print(f"Testing Chat History Auto-Deletion")
-print(f"Configured retention: {RETENTION_HOURS} hours")
-print("-" * 50)
+@pytest.fixture
+def clean_history(monkeypatch):
+    """Ensure a clean slate for history tests."""
+    test_db = "test_deletion.db"
+    if os.path.exists(test_db):
+        os.remove(test_db)
+    
+    monkeypatch.setattr(chat_history, "db_path", test_db)
+    chat_history._init_db()
+    
+    yield chat_history
+    
+    if os.path.exists(test_db):
+        os.remove(test_db)
 
-# 1. Add a test message
-print("\n1. Adding test message...")
-chat_history.add_message("user", "Test message for auto-deletion")
-messages = chat_history.get_recent_messages()
-print(f"   Messages in DB: {len(messages)}")
-
-# 2. Manually insert an old message (simulate expired message)
-print("\n2. Inserting expired message (25 hours old)...")
-import sqlite3
-conn = chat_history._get_conn()
-cursor = conn.cursor()
-old_timestamp = time.time() - (25 * 3600)  # 25 hours ago
-cursor.execute(
-    "INSERT INTO messages (id, role, content, timestamp, metadata) VALUES (?, ?, ?, ?, ?)",
-    ("test-old-id", "user", "This message is 25 hours old", old_timestamp, None)
-)
-conn.commit()
-conn.close()
-
-messages = chat_history.get_recent_messages()
-print(f"   Messages in DB (before pruning): {len(messages)}")
-
-# 3. Run pruning
-print("\n3. Running prune_old_messages()...")
-chat_history.prune_old_messages()
-
-# 4. Check if old message was deleted
-messages = chat_history.get_recent_messages()
-print(f"   Messages in DB (after pruning): {len(messages)}")
-
-# 5. Verify the old message is gone
-all_messages_query = "SELECT id, content, timestamp FROM messages"
-conn = chat_history._get_conn()
-cursor = conn.cursor()
-cursor.execute(all_messages_query)
-all_msgs = cursor.fetchall()
-conn.close()
-
-print(f"\n4. Verification:")
-print(f"   Total messages in DB: {len(all_msgs)}")
-for msg in all_msgs:
-    age_hours = (time.time() - msg[2]) / 3600
-    print(f"   - ID: {msg[0][:20]}... | Age: {age_hours:.1f}h | Content: {msg[1][:50]}")
-
-# Check if old message was deleted
-old_msg_exists = any(msg[0] == "test-old-id" for msg in all_msgs)
-if old_msg_exists:
-    print("\n❌ FAILED: Old message was NOT deleted!")
-else:
-    print("\n✅ SUCCESS: Old message was automatically deleted!")
-
-print(f"\nConclusion: Auto-deletion based on {RETENTION_HOURS}h retention is working correctly.")
+def test_auto_deletion(clean_history):
+    """Test that old threads and messages are automatically deleted."""
+    user_id = "test_deletion_user"
+    
+    # 1. Add a recent thread
+    recent_thread_id = chat_history.create_thread(user_id, "Recent Thread")
+    chat_history.add_message(recent_thread_id, "user", "Recent message")
+    
+    # 2. Add an old thread (expired)
+    old_thread_id = chat_history.create_thread(user_id, "Old Thread")
+    chat_history.add_message(old_thread_id, "user", "Old message")
+    
+    # Manually backdate the old thread in the database
+    old_timestamp = time.time() - (RETENTION_HOURS + 1) * 3600  # 1 hour past retention
+    
+    conn = chat_history._get_conn()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE threads SET updated_at = ? WHERE id = ?", (old_timestamp, old_thread_id))
+    cursor.execute("UPDATE messages SET timestamp = ? WHERE thread_id = ?", (old_timestamp, old_thread_id))
+    conn.commit()
+    conn.close()
+    
+    # Verify both exist
+    assert len(chat_history.get_user_threads(user_id)) == 2
+    
+    # 3. Run pruning
+    chat_history.prune_old_messages()
+    
+    # 4. Check results
+    threads = chat_history.get_user_threads(user_id)
+    assert len(threads) == 1
+    assert threads[0]['id'] == recent_thread_id
+    
+    # Verify old messages are gone
+    old_messages = chat_history.get_thread_messages(old_thread_id)
+    assert len(old_messages) == 0
+    
+    # Verify recent messages remain
+    recent_messages = chat_history.get_thread_messages(recent_thread_id)
+    assert len(recent_messages) == 1
