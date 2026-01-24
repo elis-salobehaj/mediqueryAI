@@ -237,7 +237,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             values: values,
             hole: selectedChartType === 'donut' ? 0.4 : 0,
             marker: { colors: colors.accents },
-            textfont: { color: '#000' },
+            textfont: { color: colors.text },
             textinfo: 'label+percent',
             hoverinfo: 'label+value+percent'
           }],
@@ -269,7 +269,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             mode: 'markers',
             x: getColumn(xCol),
             y: getColumn(yCol),
-            marker: { color: colors.brand, size: 8, line: { color: '#fff', width: 0.5 } }
+            marker: { color: colors.brand, size: 8, line: { color: colors.surface, width: 0.5 } }
           }],
           layout: { ...baseLayout, title: 'Scatter Plot', xaxis: { ...baseLayout.xaxis, title: xCol }, yaxis: { ...baseLayout.yaxis, title: yCol } }
         };
@@ -325,7 +325,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
           plotData: [{
             type: 'histogram',
             x: getColumn(xCol),
-            marker: { color: colors.brand, line: { color: '#fff', width: 0.5 } }
+            marker: { color: colors.brand, line: { color: colors.surface, width: 0.5 } }
           }],
           layout: { ...baseLayout, title: 'Histogram', xaxis: { ...baseLayout.xaxis, title: xCol }, yaxis: { ...baseLayout.yaxis, title: 'Frequency' } }
         };
@@ -419,7 +419,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             x: getColumn(xCol),
             y: getColumn(yCol),
             z: getColumn(zCol),
-            marker: { color: colors.brand, size: 5, line: { color: '#fff', width: 0.5 } }
+            marker: { color: colors.brand, size: 5, line: { color: colors.surface, width: 0.5 } }
           }],
           layout: {
             ...baseLayout,
@@ -503,7 +503,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
               parents: parents,
               values: values,
               marker: { colors: colors.accents },
-              textfont: { color: '#000' },
+              textfont: { color: colors.text },
               branchvalues: 'total'
             }],
             layout: { ...baseLayout, title: `Sunburst Chart (${useCount ? 'Count' : bestValueCol})` }
@@ -517,7 +517,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
               parents: Array(rows.length).fill(''),
               values: rows.map(getValue),
               marker: { colors: colors.accents },
-              textfont: { color: '#000' }
+              textfont: { color: colors.text }
             }],
             layout: { ...baseLayout, title: `Sunburst Chart (${useCount ? 'Count' : bestValueCol})` }
           };
@@ -567,7 +567,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
               parents: parents,
               values: values,
               marker: { colors: colors.accents },
-              textfont: { color: '#000' },
+              textfont: { color: colors.text },
               branchvalues: 'total'
             }],
             layout: { ...baseLayout, title: `Treemap (${useCount ? 'Count' : bestValueCol})` }
@@ -581,7 +581,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
               parents: Array(rows.length).fill(''),
               values: rows.map(getValue),
               marker: { colors: colors.accents },
-              textfont: { color: '#000' }
+              textfont: { color: colors.text }
             }],
             layout: { ...baseLayout, title: `Treemap (${useCount ? 'Count' : bestValueCol})` }
           };
@@ -600,7 +600,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
               color: colors.brand,
               pad: 15,
               thickness: 20,
-              line: { color: '#fff', width: 0.5 }
+              line: { color: colors.surface, width: 0.5 }
             },
             link: {
               source: getColumn(sourceCol).map((s: string) => [...new Set([...getColumn(sourceCol), ...getColumn(targetCol)])].indexOf(s)),
@@ -718,7 +718,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
           plotData: [{
             type: 'splom',
             dimensions: dimensions,
-            marker: { color: colors.brand, size: 5, line: { color: '#fff', width: 0.5 } }
+            marker: { color: colors.brand, size: 5, line: { color: colors.surface, width: 0.5 } }
           }],
           layout: { ...baseLayout, title: 'Scatter Plot Matrix (SPLOM)' }
         };
@@ -791,7 +791,7 @@ const PlotlyVisualizer: React.FC<PlotlyVisualizerProps> = ({ data, visualization
             locationmode: 'USA-states',
             locations: locations,
             text: sizes.map((v, i) => `${locations[i]}: ${v}`),
-            marker: { size: markerSizes, color: colors.brand, line: { color: '#fff', width: 1 } }
+            marker: { size: markerSizes, color: colors.brand, line: { color: colors.surface, width: 1 } }
           }],
           layout: {
             ...baseLayout,
