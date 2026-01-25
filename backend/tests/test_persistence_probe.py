@@ -10,6 +10,7 @@ def client():
     with TestClient(app) as c:
         yield c
 
+@pytest.mark.integration
 def test_thoughts_persistence(client):
     """Test that thoughts are persisted in the chat history metadata."""
     # 1. Login as guest

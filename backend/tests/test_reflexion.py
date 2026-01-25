@@ -5,6 +5,7 @@ from services.llm_agent import llm_agent
 class TestReflexionLoop:
     """Tests for Reflexion retry loop"""
     
+    @pytest.mark.integration
     def test_generate_query_plan(self):
         """Test query plan generation"""
         schema = db_service.get_schema()
@@ -17,6 +18,7 @@ class TestReflexionLoop:
         assert len(plan) > 0
         assert isinstance(plan, str)
     
+    @pytest.mark.integration
     def test_reflect_on_error(self):
         """Test error reflection"""
         failed_sql = "SELECT * FROM nonexistent_table"
