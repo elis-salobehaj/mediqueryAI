@@ -5,6 +5,7 @@ Tests the multi-agent workflow with Claude 3.5 models.
 """
 import os
 import sys
+import pytest
 from pathlib import Path
 from config import settings
 
