@@ -2,12 +2,26 @@
 
 ## [2.0.0](https://github.com/elis-salobehaj/mediqueryAI/compare/frontend-v1.4.0...frontend-v2.0.0) (2026-01-25)
 
-
 ### ⚠ BREAKING CHANGES
 
-* Multi-Agent SQL Architecture & Frontend Overhaul
+* **UX/UI Overhaul**: Complete redesign of the application using a dynamic theme system. Existing custom styles may need migration.
+* **Component Architecture**: All components now rely on CSS variables for styling.
 
 ### Features
+
+* **Dynamic Theme Engines**: Support for "Light", "Dark", and "Drilling Slate" premium themes.
+* **Glassmorphism Design**: Modern, transparent UI elements with backdrop filters and optimized readability.
+* **Enhanced Chat Experience**: Integrated thought process display for real-time multi-agent interaction monitoring.
+* **Advanced Thread Management**: Robust pinning, renaming, and bulk deletion of chat histories.
+* **Model Configuration UI**: Intuitive settings for switching between LLM providers and models.
+* **Optimized Visualizations**: Plotly and Leaflet integrations fully updated for theme responsiveness.
+
+### Quality Assurance
+
+* **Playwright Coverage**: Expanded component and E2E test suites for critical UI flows.
+* **Responsive Audit**: Improved performance and layout consistency across mobile and tablet devices.
+
+### Features (Automated)
 
 * complete auth system, sci-fi UI, and ci pipeline ([c3aebb3](https://github.com/elis-salobehaj/mediqueryAI/commit/c3aebb3ce6f397b2058022c6fa2ab81c8680f40e))
 * Enhanced SQL Agent, Visualization Fixes & Optimized CI/CD ([#6](https://github.com/elis-salobehaj/mediqueryAI/issues/6)) ([dd7aab6](https://github.com/elis-salobehaj/mediqueryAI/commit/dd7aab63dffc038fe6eba3d618b87104ca4af0b8))

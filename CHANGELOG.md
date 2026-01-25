@@ -2,10 +2,37 @@
 
 ## [2.0.0](https://github.com/elis-salobehaj/mediqueryAI/compare/mediquery-ai-v1.4.0...mediquery-ai-v2.0.0) (2026-01-25)
 
-
 ### ⚠ BREAKING CHANGES
 
-* Multi-Agent SQL Architecture & Frontend Overhaul
+* **Complete architectural overhaul**: Migrated from a single-agent LangGraph workflow to a sophisticated multi-agent system with specialized agents (Navigator, Writer, Critic).
+* **API Response Format Update**: The `/query` endpoint now returns detailed agent thoughts and metadata in the `meta` field.
+* **Frontend Theme System**: Complete redesign of the UI with dynamic CSS variables and 3 premium themes (Light, Dark, Drilling Slate).
+
+### Multi-Agent SQL Architecture (LangGraph)
+
+* **Schema Navigator Agent**: Intelligently selects relevant database tables for complex queries.
+* **SQL Writer Agent**: Generates optimized SQL queries based on identified schema.
+* **Critic Agent**: Validates generated SQL and provides feedback for self-correction.
+* **Reflexion Loop**: Implemented a self-correcting mechanism with up to 2 retry attempts.
+* **Hybrid Mode**: Graceful fallback to single-agent mode ensures high availability.
+
+### AWS Bedrock & Model Integration
+
+* **Production-ready Claude 3.5 Sonnet**: Integrated as the primary model for complex reasoning.
+* **Bearer Token Auth**: Secure AWS credential management for Bedrock API access.
+* **Optimized Model Selection**: Intelligent routing to different models based on task complexity.
+
+### Frontend UI/UX Overhaul
+
+* **Premium Theme Suite**: Introduced "Light", "Dark", and "Drilling Slate" with a glassmorphism design.
+* **Theme-Aware Architecture**: Replaced all hardcoded colors with a centralized CSS variable system.
+* **Enhanced Thread Management**: Full CRUD operations for chat threads including pinning and list management.
+
+### Infrastructure & CI/CD Optimization
+
+* **Testing Reliability**: Standardized on Pytest with categorized markers (unit, integration).
+* **Hermetic Environments**: Docker-based test orchestration for consistent CI runs.
+* **Pipeline Speed**: Optimized GitHub Actions with better caching and parallelization.
 
 ### Features
 
@@ -17,7 +44,6 @@
 * migrate to playwright and enable dynamic model config ([7f54790](https://github.com/elis-salobehaj/mediqueryAI/commit/7f54790365720dac11b9ddad730da4f387f0b987))
 * trigger release for accumulated optimizations and fixes ([#10](https://github.com/elis-salobehaj/mediqueryAI/issues/10)) ([757fadd](https://github.com/elis-salobehaj/mediqueryAI/commit/757fadd632fae2b0de3b8c6902e4239d009c63af))
 * trigger v2.0.0 release with breaking changes ([50ea6fb](https://github.com/elis-salobehaj/mediqueryAI/commit/50ea6fbbe9b98d477035700b87133a20dd0ae17d))
-
 
 ### Bug Fixes
 
