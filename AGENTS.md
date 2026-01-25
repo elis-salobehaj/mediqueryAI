@@ -161,6 +161,34 @@ uv run ruff check .
 pnpm lint
 ```
 
+### Testing with Pytest
+```bash
+# Run all tests (including integration tests)
+uv run pytest
+
+# Run only unit tests (skip integration tests - recommended for CI)
+uv run pytest -m "not integration"
+
+# Run only integration tests (requires API keys)
+uv run pytest -m "integration"
+
+# Run with verbose output
+uv run pytest -v
+
+# Run specific test file
+uv run pytest tests/test_auth.py
+
+# Run specific test function
+uv run pytest tests/test_auth.py::test_login_success
+```
+
+**Test Markers**:
+- `@pytest.mark.integration` - Tests requiring external services, API keys, or heavy resources
+- `@pytest.mark.slow` - Tests that take significant time to run
+- `@pytest.mark.asyncio` - Async tests (automatically detected)
+
+**Note**: Integration tests are skipped in GitHub Actions CI to avoid memory issues and API key requirements.
+
 ---
 
 ## 🔄 Documentation Maintenance Rules

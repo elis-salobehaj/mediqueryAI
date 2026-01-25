@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 from config import settings
 
+@pytest.mark.integration
 def test_bedrock_import():
     """Test if langchain-aws is properly installed."""
     print("✓ Step 1: Testing langchain-aws import...")
@@ -79,6 +80,7 @@ def test_langgraph_agent_import():
         traceback.print_exc()
         return False
 
+@pytest.mark.integration
 def test_bedrock_llm_initialization():
     """Test if Bedrock LLMs can be initialized."""
     print("\n✓ Step 5: Testing Bedrock LLM initialization...")

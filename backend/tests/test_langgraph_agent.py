@@ -59,6 +59,7 @@ class TestMultiAgentWorkflow:
         assert state["max_attempts"] == 3
         assert state["agent_mode"] == "multi-agent"
     
+    @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_simple_query_execution(self, multi_agent):
         """Test full workflow with a simple query."""
@@ -79,6 +80,7 @@ class TestMultiAgentWorkflow:
         assert "thoughts" in result
         assert isinstance(result["thoughts"], list)
     
+    @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_schema_navigator_selects_tables(self, multi_agent):
         """Test that Schema Navigator correctly identifies relevant tables."""
@@ -232,6 +234,7 @@ class TestMultiAgentWorkflow:
 class TestMultiAgentIntegration:
     """Integration tests for multi-agent workflow."""
     
+    @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_fallback_to_single_agent_on_error(self):
         """Test graceful degradation when multi-agent fails."""
@@ -239,6 +242,7 @@ class TestMultiAgentIntegration:
         # Simulating a multi-agent failure and checking fallback
         pass
     
+    @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_hybrid_routing_toggle(self):
         """Test that multi_agent=True routes to LangGraph workflow."""

@@ -30,13 +30,14 @@ jobs:
           # Build backend-unit service with ci profile
           docker compose -f docker-compose.test.yml --profile ci build backend-unit
             
-          # Run tests with ci profile
+          # Run tests with ci profile, skipping integration tests
           docker compose -f docker-compose.test.yml --profile ci run \
             -e GEMINI_API_KEY \
             -e JWT_SECRET_KEY \
             -e CHAT_HISTORY_RETENTION_HOURS \
             -e USE_LOCAL_MODEL \
-            --rm backend-unit
+            --rm backend-unit \
+            uv run pytest -m "not integration" -v
 
   frontend-test:
     runs-on: ubuntu-latest
