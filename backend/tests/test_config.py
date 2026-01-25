@@ -1,31 +1,21 @@
-from fastapi.testclient import TestClient
-from unittest.mock import patch
 import os
 import pytest
-from main import app
+from config import Settings
 
-client = TestClient(app)
+def test_settings_load_from_env():
+    # Set dummy env vars for testing
+    os.environ["GEMINI_API_KEY"] = "test_key"
+    os.environ["USE_BEDROCK"] = "true"
+    
+    settings = Settings()
+    assert settings.gemini_api_key == "test_key"
+    assert settings.use_bedrock == True
+    
+    # Cleanup
+    del os.environ["GEMINI_API_KEY"]
+    del os.environ["USE_BEDROCK"]
 
-def test_get_models_cloud_default():
-    """Test /config/models returns cloud models when USE_LOCAL_MODEL is false."""
-    with patch.dict(os.environ, {"USE_LOCAL_MODEL": "false"}):
-        # Re-init agent or mock its state because it loads env vars at init
-        with patch("services.llm_agent.llm_agent.use_local", False):
-            response = client.get("/config/models")
-            assert response.status_code == 200
-            models = response.json()
-            assert len(models) == 3
-            assert models[0]["id"] == "gemma-3-27b-it"
-
-def test_get_models_local():
-    """Test /config/models returns local models when USE_LOCAL_MODEL is true."""
-    with patch.dict(os.environ, {"USE_LOCAL_MODEL": "true"}):
-        with patch("services.llm_agent.llm_agent.use_local", True):
-            response = client.get("/config/models")
-            assert response.status_code == 200
-            models = response.json()
-            assert len(models) >= 3
-            # Verify our top picks are present
-            assert any(m["id"] == "qwen2.5-coder:7b" for m in models)
-            assert any(m["id"] == "sqlcoder:7b" for m in models)
-            assert any(m["id"] == "llama3.1" for m in models)
+def test_settings_defaults():
+    settings = Settings()
+    assert settings.log_level == "DEBUG"
+    assert settings.aws_bedrock_region == "us-west-2"

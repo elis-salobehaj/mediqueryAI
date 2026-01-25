@@ -12,7 +12,7 @@ docker compose -f docker-compose.test.yml down -v
 
 echo -e "\033[36m[E2E] Building and Running Tests...\033[0m"
 # Abort entire stack if the runner fails
-docker compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from e2e-runner backend frontend e2e-runner
+docker compose -f docker-compose.test.yml --profile e2e up --build --abort-on-container-exit --exit-code-from e2e-runner
 EXIT_CODE=$?
 
 echo -e "\033[36m[E2E] Tearing down...\033[0m"

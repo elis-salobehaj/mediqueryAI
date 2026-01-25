@@ -36,7 +36,10 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       args:
-        BUILD_MODE: production
+        # Use 'bedrock' for lightweight cloud deployment (no PyTorch/HuggingFace)
+        # Use 'local' for Ollama + semantic search (includes heavy ML libraries)
+        # Use 'full' for all features
+        BUILD_MODE: ${DOCKER_BUILD_MODE:-bedrock}
     container_name: mediquery-ai-backend
     ports:
       - "8000:8000"
@@ -50,6 +53,12 @@ services:
       - USE_LOCAL_MODEL=${USE_LOCAL_MODEL}
       - LOCAL_MODEL_NAME=${LOCAL_MODEL_NAME}
       - OLLAMA_HOST=http://mediquery-ai-ollama:11434
+      - USE_BEDROCK=${USE_BEDROCK}
+      - AWS_BEDROCK_REGION=${AWS_BEDROCK_REGION}
+      - AWS_BEARER_TOKEN_BEDROCK=${AWS_BEARER_TOKEN_BEDROCK}
+      - BEDROCK_SQL_WRITER_MODEL=${BEDROCK_SQL_WRITER_MODEL}
+      - BEDROCK_NAVIGATOR_MODEL=${BEDROCK_NAVIGATOR_MODEL}
+      - BEDROCK_CRITIC_MODEL=${BEDROCK_CRITIC_MODEL}
     # No hard dependency on Ollama - backend will work with or without it
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -85,4 +94,5 @@ volumes:
 
 networks:
   default:
-    name: antigravity-network
+    name: mediquery-ai-network
+    driver: bridge

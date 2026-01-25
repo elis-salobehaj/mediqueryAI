@@ -6,9 +6,11 @@ Complete guide for running the AI Healthcare Data Agent with Docker Compose.
 
 ### 1. Prerequisites
 
-- **Docker Desktop** installed ([Download](https://www.docker.com/products/docker-desktop))
-- **Docker Compose** (included with Docker Desktop)
+- **Docker** and **Docker Compose** installed:
+  - **Linux**: Follow [Docker Engine installation](https://docs.docker.com/engine/install/) and [Docker Compose installation](https://docs.docker.com/compose/install/)
+  - **Windows/Mac**: [Docker Desktop](https://www.docker.com/products/docker-desktop) (includes Docker Compose)
 - **8GB RAM minimum** (for Ollama model)
+- **NVIDIA GPU** (optional, for faster inference)
 
 ### 2. Setup Environment
 
@@ -156,14 +158,14 @@ docker compose logs -f backend
 
 ```bash
 # Access backend container
-docker exec -it antigravity-backend bash
+docker exec -it mediquery-ai-backend bash
 
 # View chat history database
-docker exec -it antigravity-backend ls -lh chat_history.db
+docker exec -it mediquery-ai-backend ls -lh chat_history.db
 
 # Backup data
-docker cp antigravity-backend:/app/chat_history.db ./backup/
-docker cp antigravity-backend:/app/data ./backup/
+docker cp mediquery-ai-backend:/app/chat_history.db ./backup/
+docker cp mediquery-ai-backend:/app/data ./backup/
 ```
 
 ---
@@ -362,10 +364,10 @@ mkdir -p backup
 docker run --rm -v ollama_data:/data -v $(pwd)/backup:/backup alpine tar czf /backup/ollama_data.tar.gz -C /data .
 
 # Backup database
-docker cp antigravity-backend:/app/chat_history.db ./backup/
+docker cp mediquery-ai-backend:/app/chat_history.db ./backup/
 
 # Backup CSV data
-docker cp antigravity-backend:/app/data ./backup/
+docker cp mediquery-ai-backend:/app/data ./backup/
 ```
 
 ### Restore
@@ -375,7 +377,7 @@ docker cp antigravity-backend:/app/data ./backup/
 docker run --rm -v ollama_data:/data -v $(pwd)/backup:/backup alpine tar xzf /backup/ollama_data.tar.gz -C /data
 
 # Restore database
-docker cp ./backup/chat_history.db antigravity-backend:/app/
+docker cp ./backup/chat_history.db mediquery-ai-backend:/app/
 
 # Restart services
 docker compose restart

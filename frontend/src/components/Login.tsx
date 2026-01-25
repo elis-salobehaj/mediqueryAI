@@ -69,19 +69,19 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full bg-black z-50 absolute top-0 left-0 bg-[url('/grid-bg.png')] bg-cover">
-      <div className="absolute inset-0 bg-[#000000]/80"></div>
+    <div className="@container flex flex-col items-center justify-center w-full h-full bg-[var(--bg-primary)] z-50 absolute top-0 left-0">
+      <div className="absolute inset-0 bg-[var(--bg-primary)]/80 backdrop-blur-sm"></div>
 
-      {/* Login Card */}
-      <div className="relative w-[400px] p-8 border border-[#00F0FF]/30 bg-[#020408]/90 backdrop-blur-md rounded-lg shadow-[0_0_50px_rgba(0,240,255,0.15)] clip-corner">
+      {/* Login Card - Responsive with Container Queries */}
+      <div className="relative @sm:w-[400px] w-[90%] p-6 @sm:p-8 border border-[var(--accent-primary)]/30 bg-[var(--bg-secondary)]/90 backdrop-blur-md rounded-lg shadow-xl">
 
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl text-white font-bold tracking-widest mb-1">
-            MEDIQUERY<span className="text-[#00F0FF]">.AI</span>
+          <h1 className="text-2xl @sm:text-3xl text-[var(--text-primary)] font-bold tracking-widest mb-1 font-heading">
+            MEDIQUERY<span className="text-[var(--accent-primary)]">.AI</span>
           </h1>
-          <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-[#00F0FF]/50 to-transparent my-2"></div>
-          <h2 className="text-sm text-[#00F0FF] font-mono tracking-[0.3em]">
+          <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-[var(--accent-primary)]/50 to-transparent my-2"></div>
+          <h2 className="text-xs @sm:text-sm text-[var(--accent-primary)] font-mono tracking-[0.3em]">
             {isRegistering ? 'INITIALIZE IDENTITY' : 'IDENTITY VERIFICATION'}
           </h2>
         </div>
@@ -94,23 +94,23 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div className="group">
-            <label className="block text-[#00F0FF]/60 text-[10px] font-mono mb-1 tracking-wider group-focus-within:text-[#00F0FF] transition-colors">USER_ID</label>
+            <label className="block text-[var(--accent-primary)]/60 text-[10px] font-mono mb-1 tracking-wider group-focus-within:text-[var(--accent-primary)] transition-colors">USER_ID</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full bg-[#00F0FF]/5 border border-[#00F0FF]/20 text-[#00F0FF] p-3 focus:outline-none focus:border-[#00F0FF] focus:bg-[#00F0FF]/10 transition-all font-mono"
+              className="w-full bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-primary)] p-3 focus:outline-none focus:border-[var(--accent-primary)] focus:ring-2 focus:ring-[var(--accent-primary)]/20 transition-all font-mono rounded"
               placeholder="ENTER USERNAME"
               required
             />
           </div>
           <div className="group">
-            <label className="block text-[#00F0FF]/60 text-[10px] font-mono mb-1 tracking-wider group-focus-within:text-[#00F0FF] transition-colors">ACCESS_CODE</label>
+            <label className="block text-[var(--accent-primary)]/60 text-[10px] font-mono mb-1 tracking-wider group-focus-within:text-[var(--accent-primary)] transition-colors">ACCESS_CODE</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-[#00F0FF]/5 border border-[#00F0FF]/20 text-[#00F0FF] p-3 focus:outline-none focus:border-[#00F0FF] focus:bg-[#00F0FF]/10 transition-all font-mono"
+              className="w-full bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-primary)] p-3 focus:outline-none focus:border-[var(--accent-primary)] focus:ring-2 focus:ring-[var(--accent-primary)]/20 transition-all font-mono rounded"
               placeholder="ENTER PASSWORD"
               required
             />
@@ -119,7 +119,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <button
             type="submit"
             disabled={loading}
-            className="mt-6 w-full bg-[#00F0FF] text-black font-bold py-3 px-4 uppercase font-display tracking-widest hover:bg-white hover:shadow-[0_0_30px_rgba(0,240,255,0.6)] transition-all disabled:opacity-50 disabled:cursor-not-allowed clip-button text-lg"
+            className="mt-6 w-full bg-[var(--accent-primary)] text-white font-bold py-3 px-4 uppercase font-heading tracking-widest hover:bg-[var(--accent-hover)] hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed rounded text-base @sm:text-lg cursor-pointer"
           >
             {loading ? 'PROCESSING...' : (isRegistering ? 'ESTABLISH LINK' : 'AUTHENTICATE')}
           </button>
@@ -128,22 +128,22 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         <div className="mt-8 flex flex-col items-center gap-4 w-full">
           <button
             onClick={() => setIsRegistering(!isRegistering)}
-            className="text-[#00F0FF] text-sm hover:text-white transition-colors font-mono tracking-wider border-b border-[#00F0FF]/30 pb-1"
+            className="text-[var(--accent-primary)] text-sm hover:text-[var(--accent-hover)] transition-colors font-mono tracking-wider border-b border-[var(--accent-primary)]/30 pb-1 cursor-pointer"
           >
             {isRegistering ? '<< RETURN TO LOGIN' : '>> CREATE NEW IDENTITY'}
           </button>
 
           <div className="w-full flex items-center gap-4 my-2">
-            <div className="h-[1px] flex-1 bg-[#00F0FF]/20"></div>
-            <div className="text-[#00F0FF]/40 text-[10px] font-mono">OR</div>
-            <div className="h-[1px] flex-1 bg-[#00F0FF]/20"></div>
+            <div className="h-[1px] flex-1 bg-[var(--border-subtle)]"></div>
+            <div className="text-[var(--text-tertiary)] text-[10px] font-mono">OR</div>
+            <div className="h-[1px] flex-1 bg-[var(--border-subtle)]"></div>
           </div>
 
           <button
             type="button"
             onClick={handleGuestLogin}
             disabled={loading}
-            className="w-full bg-transparent border border-[#00F0FF] text-[#00F0FF] py-3 px-6 hover:bg-[#00F0FF]/10 hover:shadow-[0_0_20px_rgba(0,240,255,0.2)] transition-all font-display tracking-widest clip-button text-sm"
+            className="w-full bg-transparent border border-[var(--accent-primary)] text-[var(--accent-primary)] py-3 px-6 hover:bg-[var(--accent-primary)]/10 hover:shadow-md transition-all font-heading tracking-widest rounded text-sm cursor-pointer"
           >
             INITIATE GUEST PROTOCOL
           </button>
@@ -151,11 +151,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
         {/* Footer / SSO Placeholders */}
         <div className="mt-6 text-center">
-          <div className="text-[#00F0FF]/20 text-[10px] mb-2 font-mono tracking-widest">- SECURE CONNECTION -</div>
+          <div className="text-[var(--text-tertiary)] text-[10px] mb-2 font-mono tracking-widest">- SECURE CONNECTION -</div>
           <div className="flex justify-center gap-3 opacity-50">
-            {/* Icons placeholders or text */}
-            <span className="text-[10px] text-[#00F0FF]/40 border border-[#00F0FF]/20 px-2 py-1 rounded">ENTRA</span>
-            <span className="text-[10px] text-[#00F0FF]/40 border border-[#00F0FF]/20 px-2 py-1 rounded">AWS</span>
+            <span className="text-[10px] text-[var(--text-tertiary)] border border-[var(--border-subtle)] px-2 py-1 rounded">ENTRA</span>
+            <span className="text-[10px] text-[var(--text-tertiary)] border border-[var(--border-subtle)] px-2 py-1 rounded">AWS</span>
           </div>
         </div>
       </div>

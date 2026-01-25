@@ -76,11 +76,37 @@ class DatabaseService:
             schema_str.append(f"Table: {table}{table_desc}\nColumns: {', '.join(columns)}")
         
         return "\n\n".join(schema_str)
+    
+    def get_all_table_names(self) -> list[str]:
+        """Returns a list of all table names in the database."""
+        self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        return [row[0] for row in self.cursor.fetchall()]
+    
+    def get_table_schema(self, table_name: str) -> list[tuple[str, str]]:
+        """
+        Returns the schema for a specific table as a list of (column_name, column_type) tuples.
+        
+        Args:
+            table_name: Name of the table
+            
+        Returns:
+            List of tuples containing (column_name, column_type)
+        """
+        try:
+            self.cursor.execute(f"PRAGMA table_info({table_name})")
+            # PRAGMA table_info returns: cid, name, type, notnull, dflt_value, pk
+            # We want just name (index 1) and type (index 2)
+            return [(row[1], row[2]) for row in self.cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"Failed to get schema for table {table_name}: {e}")
+            return []
 
     def execute_query(self, sql_query: str):
         """Executes a SQL query and returns the results as a list of dictionaries."""
         try:
-            df = pd.read_sql_query(sql_query, self.conn)
+            # Strip trailing semicolons for consistency
+            sql_clean = sql_query.strip().rstrip(';')
+            df = pd.read_sql_query(sql_clean, self.conn)
             return {
                 "columns": df.columns.tolist(),
                 "data": df.to_dict(orient="records"),
@@ -89,6 +115,57 @@ class DatabaseService:
         except Exception as e:
             logger.error(f"Query execution failed: {e}")
             raise e
+
+    def validate_sql(self, sql_query: str) -> dict:
+        """
+        Validates a SQL query through dry-run execution and sanity checks.
+        
+        Returns:
+            dict with keys:
+                - valid (bool): True if query is valid
+                - error (str | None): Error message if invalid
+                - row_count (int | None): Estimated row count (None if error)
+                - warnings (list): List of warning messages
+        """
+        warnings = []
+        
+        # Strip trailing semicolons - SQLite doesn't handle them well in EXPLAIN or subqueries
+        sql_clean = sql_query.strip().rstrip(';')
+        
+        try:
+            # Use EXPLAIN QUERY PLAN for dry-run validation (SQLite specific)
+            explain_query = f"EXPLAIN QUERY PLAN {sql_clean}"
+            self.cursor.execute(explain_query)
+            self.cursor.fetchall()  # Consume results
+            
+            # If EXPLAIN succeeded, try to get row count estimate
+            # For safety, we'll use LIMIT to avoid actually fetching large results
+            count_query = f"SELECT COUNT(*) as count FROM ({sql_clean})"
+            self.cursor.execute(count_query)
+            row_count = self.cursor.fetchone()[0]
+            
+            # Sanity checks
+            if row_count == 0:
+                warnings.append("Query returns 0 rows - may indicate incorrect filters or empty tables")
+            elif row_count > 10000:
+                warnings.append(f"Query returns {row_count} rows - unusually high, may need additional filters")
+            
+            return {
+                "valid": True,
+                "error": None,
+                "row_count": row_count,
+                "warnings": warnings
+            }
+            
+        except Exception as e:
+            error_msg = str(e)
+            logger.warning(f"SQL validation failed: {error_msg}")
+            return {
+                "valid": False,
+                "error": error_msg,
+                "row_count": None,
+                "warnings": []
+            }
 
 # Singleton instance
 db_service = DatabaseService()

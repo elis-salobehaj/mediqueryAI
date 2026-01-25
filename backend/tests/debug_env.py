@@ -1,17 +1,9 @@
-from dotenv import load_dotenv
-from pathlib import Path
+import os
+from config import settings
 
-# Load .env from project root (3 levels up from tests file: backend/tests/ -> backend/ -> root)
-# Actually tests/ is inside backend/. So: tests -> backend -> root (2 parent jumps from backend, wait)
-# root/backend/tests/debug_env.py
-# parent -> backend
-# parent.parent -> root
-env_path = Path(__file__).resolve().parent.parent.parent / '.env'
-load_dotenv(dotenv_path=env_path)
-
-gemini_key = os.getenv("GEMINI_API_KEY")
-anthropic_key = os.getenv("ANTHROPIC_API_KEY")
-use_local = os.getenv("USE_LOCAL_MODEL", "false")
+gemini_key = settings.gemini_api_key
+anthropic_key = settings.anthropic_api_key
+use_local = str(settings.use_local_model)
 
 print(f"Current Working Directory: {os.getcwd()}")
 
@@ -33,7 +25,7 @@ if anthropic_key:
 
 # 3. Local Model
 print(f"Checking USE_LOCAL_MODEL... Value: {use_local}")
-if use_local.lower() == 'true':
+if settings.use_local_model:
     print(" -> Local mode is ENABLED. Cloud keys might be skipped.")
-    print(f" -> Local Model Name: {os.getenv('LOCAL_MODEL_NAME', 'Not Set')}")
-    print(f" -> Ollama Host: {os.getenv('OLLAMA_HOST', 'Not Set')}")
+    print(f" -> Local Model Name: {settings.local_model_name}")
+    print(f" -> Ollama Host: {settings.ollama_host}")

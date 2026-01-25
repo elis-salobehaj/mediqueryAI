@@ -4,14 +4,20 @@ The futuristic interface for the MediQuery AI healthcare data agent. Built with 
 
 ## 🌟 Key Features
 
-- **Cyberpunk / Sci-Fi Aesthetic**: Dark mode glassmorphism UI.
+- **Cyberpunk / Sci-Fi Aesthetic**: Dark mode glassmorphism UI with futuristic HUD design.
 - **Explainable AI Interface**: 
   - Displays the agent's **"Thinking Process"** in a collapsible detail view.
-  - Shows Raw SQL generation steps.
-  - Transparent error handling.
+  - Shows multi-agent workflow steps (Schema Navigator → SQL Writer → Critic).
+  - Displays raw SQL generation and validation results.
+  - Transparent error handling with reflection feedback.
 - **Dynamic Visualization Engine**:
   - `PlotlyVisualizer.tsx` component automatically selects 1 of 60+ chart types based on data.
   - Interactive zooming, panning, and exporting.
+  - Real-time chart type switching.
+- **Dual-Mode Toggles**:
+  - **Fast/Thinking**: Choose between quick responses (⚡) or detailed reasoning (🧠)
+  - **Single/Multi-Agent**: Toggle between simple queries (🤖) or complex multi-agent workflow (🤖)
+- **CSV Export**: Download query results with a single click.
 - **Responsive Layout**: Works on desktop and large tablets.
 
 ## 🛠️ Technology Stack
@@ -56,7 +62,7 @@ The futuristic interface for the MediQuery AI healthcare data agent. Built with 
 
 We use **Playwright** for both Component and End-to-End testing.
 
-### Component Tests (Fast)
+### Component Tests (Fast - 10 tests)
 ```bash
 # Run locally
 npx playwright test
@@ -66,7 +72,13 @@ cd ..
 ./run-ci.sh  # Includes frontend component tests
 ```
 
-### E2E Tests (Full Stack)
+**Test Coverage:**
+- ChatBox component (user input, message rendering, toggles)
+- Configuration component (model selection)
+- Login component (authentication flows)
+- PlotlyVisualizer component (chart rendering and switching)
+
+### E2E Tests (Full Stack - 2 tests)
 ```bash
 # Run locally (requires backend running)
 npx playwright test -c playwright-e2e.config.ts
@@ -75,6 +87,12 @@ npx playwright test -c playwright-e2e.config.ts
 cd ..
 ./run-e2e.sh  # Spins up backend + frontend + runs tests
 ```
+
+**Test Coverage:**
+- Guest login and authentication flow
+- Configuration endpoint validation
+- Chat history retrieval
+- Full stack health checks
 
 ### Dockerized Testing
 We use custom Dockerfiles with cached browsers for consistent CI/CD environments:

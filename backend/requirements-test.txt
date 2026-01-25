@@ -1,18 +1,12 @@
-fastapi
-uvicorn
-python-dotenv
-google-genai
-google-api-core
-pandas
-ollama
-anthropic>=0.25.0
-python-jose[cryptography]
-argon2-cffi
-python-multipart
-authlib
-pytest
-sqlalchemy
+# Test dependencies - extend base requirements without heavy ML libraries
+-r requirements-base.txt
+
+# Testing frameworks
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+
+# Mock external APIs (no heavy ML dependencies needed)
 # Heavy libraries excluded (mocked in conftest.py):
-# llama-index
-# llama-index-llms-ollama
-# llama-index-embeddings-huggingface
+# - llama-index
+# - llama-index-llms-ollama  
+# - llama-index-embeddings-huggingface

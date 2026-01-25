@@ -1,6 +1,7 @@
 from unittest.mock import patch, MagicMock
 import os
 import sys
+from config import settings
 
 # Add backend to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -26,6 +27,8 @@ def test_semantic_setup_flow():
 
             # Init agent
             agent = LLMAgent()
+            agent.settings = settings # Provide settings
+            agent._setup_semantic_engine()
             
             # Assertions
             assert MockIndex.from_objects.called
@@ -38,6 +41,8 @@ def test_semantic_retrieval_flow():
     """Test that generate_sql uses retrieval if available."""
     with patch('services.llm_agent.HAS_LLAMA_INDEX', True):
         agent = LLMAgent()
+        agent.settings = settings
+        agent.settings.use_local_model = True
         
         # Manually attach a mock retriever
         mock_retriever = MagicMock()

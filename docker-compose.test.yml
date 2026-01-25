@@ -5,6 +5,7 @@ services:
   
   # Isolated Backend Unit Tests (Pytest)
   backend-unit:
+    profiles: ["ci"]
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -19,6 +20,7 @@ services:
 
   # Isolated Frontend Component Tests (Playwright CT)
   frontend-component:
+    profiles: ["ci"]
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -34,6 +36,7 @@ services:
 
   # Real Backend (Mocked LLM for stability)
   backend:
+    profiles: ["e2e"]
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -52,6 +55,7 @@ services:
 
   # Real Frontend (Nginx)
   frontend:
+    profiles: ["e2e"]
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -72,6 +76,7 @@ services:
 
   # E2E Runner (Ephemerally runs tests against the stack)
   e2e-runner:
+    profiles: ["e2e"]
     image: mcr.microsoft.com/playwright:v1.57.0-jammy
     working_dir: /app
     volumes:

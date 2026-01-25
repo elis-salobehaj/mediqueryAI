@@ -6,16 +6,11 @@ sys.path.append(os.path.join(os.getcwd()))
 
 from services.database import db_service
 from services.llm_agent import llm_agent
-from dotenv import load_dotenv
+from config import settings
 
-from pathlib import Path
-
-# Load env explicitly from root
-env_path = Path(__file__).resolve().parent.parent.parent / '.env'
-load_dotenv(dotenv_path=env_path)
-api_key = os.getenv("GEMINI_API_KEY")
-anthropic_key = os.getenv("ANTHROPIC_API_KEY")
-use_local = os.getenv("USE_LOCAL_MODEL", "false").lower() == "true"
+api_key = settings.gemini_api_key
+anthropic_key = settings.anthropic_api_key
+use_local = settings.use_local_model
 
 print(f"Configuration Loaded:")
 print(f"- Local Mode: {use_local}")
@@ -23,8 +18,7 @@ print(f"- Gemini Key: {'Present' if api_key else 'Missing'}")
 print(f"- Anthropic Key: {'Present' if anthropic_key else 'Missing'}")
 
 # Configure Agent
-if api_key and not use_local:
-    llm_agent.configure(api_key)
+llm_agent.configure(settings)
 
 print("\n--- CHECKING SCHEMA ---")
 try:
