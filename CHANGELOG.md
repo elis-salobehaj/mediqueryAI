@@ -1,5 +1,30 @@
 # Changelog
 
+## [2.0.0](https://github.com/elis-salobehaj/mediqueryAI/compare/mediquery-ai-v1.4.0...mediquery-ai-v2.0.0) (2026-01-25)
+
+
+### ⚠ BREAKING CHANGES
+
+* Multi-Agent SQL Architecture & Frontend Overhaul
+
+### Features
+
+* complete auth system, sci-fi UI, and ci pipeline ([c3aebb3](https://github.com/elis-salobehaj/mediqueryAI/commit/c3aebb3ce6f397b2058022c6fa2ab81c8680f40e))
+* enable nvidia gpu support in docker compose ([f77998c](https://github.com/elis-salobehaj/mediqueryAI/commit/f77998c75c6bf691576929635acca0a5918b2918))
+* Enhanced SQL Agent, Visualization Fixes & Optimized CI/CD ([#6](https://github.com/elis-salobehaj/mediqueryAI/issues/6)) ([dd7aab6](https://github.com/elis-salobehaj/mediqueryAI/commit/dd7aab63dffc038fe6eba3d618b87104ca4af0b8))
+* Explainable AI and Visualization Enhancements ([#4](https://github.com/elis-salobehaj/mediqueryAI/issues/4)) ([9a54e3d](https://github.com/elis-salobehaj/mediqueryAI/commit/9a54e3db6f2733e088b8ba64b0318dcc1782e15b))
+* integrate qwen2.5-coder and sqlcoder models ([#2](https://github.com/elis-salobehaj/mediqueryAI/issues/2)) ([458a883](https://github.com/elis-salobehaj/mediqueryAI/commit/458a883bd251b71ca74ce8016e7ccaab1f9f4335))
+* migrate to playwright and enable dynamic model config ([7f54790](https://github.com/elis-salobehaj/mediqueryAI/commit/7f54790365720dac11b9ddad730da4f387f0b987))
+* trigger release for accumulated optimizations and fixes ([#10](https://github.com/elis-salobehaj/mediqueryAI/issues/10)) ([757fadd](https://github.com/elis-salobehaj/mediqueryAI/commit/757fadd632fae2b0de3b8c6902e4239d009c63af))
+* trigger v2.0.0 release with breaking changes ([50ea6fb](https://github.com/elis-salobehaj/mediqueryAI/commit/50ea6fbbe9b98d477035700b87133a20dd0ae17d))
+
+
+### Bug Fixes
+
+* correct python version step name in ci ([31866ad](https://github.com/elis-salobehaj/mediqueryAI/commit/31866ad5f9e50c77b3550c032b5807a17317b8d2))
+* stabilize ci pipeline by correcting test data and removing flaky e2e script ([a601f87](https://github.com/elis-salobehaj/mediqueryAI/commit/a601f87ec2f3d482e0df82c89c812d2a0778a3f1))
+* use python -m pytest in CI to resolve import paths ([3e5b12b](https://github.com/elis-salobehaj/mediqueryAI/commit/3e5b12b3d8ee73f16699f66f66f249040f93d8ea))
+
 ## [1.4.0](https://github.com/elis-salobehaj/mediqueryAI/compare/mediquery-ai-v1.3.0...mediquery-ai-v1.4.0) (2026-01-16)
 
 
