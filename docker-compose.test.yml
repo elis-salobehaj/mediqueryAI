@@ -16,7 +16,7 @@ services:
       - GEMINI_API_KEY=test
       - ANTHROPIC_API_KEY=test
     # No volumes! We rely on COPY in Dockerfile for hermetic builds.
-    command: uv run pytest -v
+    command: python -m pytest -v
 
   # Isolated Frontend Component Tests (Playwright CT)
   frontend-component:
