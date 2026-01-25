@@ -139,9 +139,22 @@ See [TESTING_GUIDE.md](TESTING_GUIDE.md) for detailed scenarios.
 
 ## ✨ Visual Insights
 
+### Light Theme
 | Choropleth Map | Pie Chart | Bar Chart |
 |:---:|:---:|:---:|
-| ![Choropleth Map](docs/images/choropleth_map.png) | ![Pie Chart](docs/images/pie_chart.png) | ![Bar Chart](docs/images/bar_chart.png) |
+| ![Choropleth Map - Light](docs/images/visualizations/choropleth_light.png) | ![Pie Chart - Light](docs/images/visualizations/pie_light.png) | ![Bar Chart - Light](docs/images/visualizations/bar_light.png) |
+| *Average age by state* | *Gender distribution* | *Patient count by state* |
+
+### Dark Theme
+| Choropleth Map | Pie Chart | Bar Chart |
+|:---:|:---:|:---:|
+| ![Choropleth Map - Dark](docs/images/visualizations/choropleth_dark.png) | ![Pie Chart - Dark](docs/images/visualizations/pie_dark.png) | ![Bar Chart - Dark](docs/images/visualizations/bar_dark.png) |
+| *Average age by state* | *Gender distribution* | *Patient count by state* |
+
+### Drilling Slate Theme
+| Choropleth Map | Pie Chart | Bar Chart |
+|:---:|:---:|:---:|
+| ![Choropleth Map - Drilling Slate](docs/images/visualizations/choropleth_drilling_slate.png) | ![Pie Chart - Drilling Slate](docs/images/visualizations/pie_drilling_slate.png) | ![Bar Chart - Drilling Slate](docs/images/visualizations/bar_drilling_slate.png) |
 | *Average age by state* | *Gender distribution* | *Patient count by state* |
 
 ## Tech Stack

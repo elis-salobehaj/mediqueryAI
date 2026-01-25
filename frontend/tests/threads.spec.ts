@@ -2,29 +2,14 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Thread Management', () => {
   test.beforeEach(async ({ page }) => {
-    // Mock API responses
-    await page.route('*/**/auth/token', async route => {
-      await route.fulfill({ json: { access_token: 'mock-token', token_type: 'bearer' } });
-    });
+    // Navigate to the app
+    await page.goto('/');
 
-    await page.route('*/**/threads', async route => {
-      if (route.request().method() === 'GET') {
-        await route.fulfill({ json: { threads: [] } });
-      } else {
-        await route.continue();
-      }
-    });
+    // Use guest login (like other E2E tests)
+    await page.getByRole('button', { name: /INITIATE GUEST PROTOCOL/i }).click();
 
-    await page.goto('http://localhost:3000');
-    // Login flow if needed, or assume mock token stored (need to handle login UI if it appears)
-    // Since we mock token in App.tsx typically or handling it via local storage
-
-    // Fill login if redirected
-    if (await page.getByPlaceholder('Username').isVisible()) {
-      await page.getByPlaceholder('Username').fill('test');
-      await page.getByPlaceholder('Password').fill('test');
-      await page.getByRole('button', { name: 'Sign In' }).click();
-    }
+    // Wait for the chat interface to be ready
+    await page.waitForSelector('textarea[placeholder*="Ask"]', { timeout: 10000 });
   });
 
   test('should create a new thread when sending a message', async ({ page }) => {
